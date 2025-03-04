@@ -1,0 +1,243 @@
+// -------------------------------------------------------------------------
+// Karel.txt
+// SLANG version of a domain-specific language for Karel the Robot
+// -------------------------------------------------------------------------
+
+language Karel
+{
+  target java
+  {
+    header
+    {#
+package lang.karel;
+import java.util.*;
+import static lang.karel.Karel.*;
+    #}
+  }
+
+  // ----------------------------------------------------------------------
+  // syntactic domains
+  // ----------------------------------------------------------------------
+  domains
+  {
+    Command = Forward[NUM] + ForwardDefault + TurnLeft + TurnRight + Reset + Skip
+            + Seq[Command,Command];
+    Program = Prog[Command];
+  }
+
+  // -----------------------------------------------------------------------
+  // printer
+  // -----------------------------------------------------------------------
+  printer
+  {
+    domain Command
+    {
+      case Forward[n] → # _result = n == 1 ? "FORWARD" : "FORWARD-" + n; #;
+      case ForwardDefault → # _result = "FORWARD"; #;
+      case TurnLeft → # _result = "TLEFT"; #;
+      case TurnRight → # _result = "TRIGHT"; #;
+      case Reset → # _result = "RESET"; #;
+      case Skip → # _result = "SKIP"; #;
+      case Seq[c1,c2] → # _result = c1 + ":" + c2; #;
+    }
+    domain Program
+    {
+      case Prog[c] → # _result = c.toString(); #;
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // parser
+  // -----------------------------------------------------------------------
+  parser antlr4
+  {
+    domain Command
+    {
+      case # 'forward' n=dNUM # → Forward[n];
+      case # 'forward' # → ForwardDefault;
+      case # 'turn left' # → TurnLeft;
+      case # 'turn right' # → TurnRight;
+      case # 'reset' # → Reset;
+      case # 'skip' # → Skip;
+      case # c1=dCommand ';' c2=dCommand # → Seq[c1,c2];
+    }
+    domain Program
+    {
+      case # c=dCommand ( ';' c2=dCommand )* ';'? EOF # → Prog[c];
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // abstract machine instructions
+  // -----------------------------------------------------------------------
+  code
+  {#
+    public enum Instruction { FORWARD, TLEFT, TRIGHT, RESET, SKIP }
+    public static class Machine
+    {
+      private int x = 0, y = 0, direction = 0; // 0: North, 1: East, 2: South, 3: West
+      public int getX() { return x; }
+      public int getY() { return y; }
+      public int getDirection() { return direction; }
+      // Handle both FORWARD and FORWARD-N
+      public void executeForward(int n)
+      {
+        if (n == 1) {
+            System.out.println("<FORWARD, E, " + this + "> =>>");
+            execute(Instruction.FORWARD);
+        } else {
+            for (int i = 0; i < n; i++) {
+                System.out.println("<FORWARD, E, " + this + "> =>>");
+                execute(Instruction.FORWARD);
+            }
+        }
+      }
+
+      public void execute(Instruction inst, int... params)
+      {
+        switch (inst)
+        {
+          case FORWARD:
+            move(1);
+            break;
+          case TLEFT:
+            direction = (direction + 3) % 4; // Turn counterclockwise
+            break;
+          case TRIGHT:
+            direction = (direction + 1) % 4; // Turn clockwise
+            break;
+          case RESET:
+            x = 0; y = 0; direction = 0;
+            break;
+          case SKIP:
+            break; // Do nothing
+        }
+      }
+
+      private void move(int steps)
+      {
+        switch (direction)
+        {
+          case 0: y += steps; break; // North
+          case 1: x += steps; break; // East
+          case 2: y -= steps; break; // South
+          case 3: x -= steps; break; // West
+        }
+      }
+
+      @Override
+      public String toString()
+      {
+        return "((" + x + ", " + y + "), " + (direction * 90) + ")";
+      }
+    }
+  #}
+  code
+  {#
+      public static class Program {
+          private final Command command;
+
+          public Program(Command command) {
+              this.command = command;
+          }
+
+          public Command getCommand() {
+              return command;
+          }
+      }
+  #}
+
+  judgment ⊢ Command: command
+  {
+      inference ⊢ Forward[n]: command
+      {
+      }
+      inference ⊢ ForwardDefault: command
+      {
+      }
+      inference ⊢ TurnLeft: command
+      {
+      }
+      inference ⊢ TurnRight: command
+      {
+      }
+      inference ⊢ Reset: command
+      {
+      }
+      inference ⊢ Skip: command
+      {
+      }
+      inference ⊢ Seq[c1,c2]: command
+      {
+          ⊢ c1: command;
+          ⊢ c2: command;
+      }
+  }
+  judgment ⊢ Program: program
+  {
+      inference ⊢ Prog[c]: program
+      {
+          ⊢ c: command;
+      }
+  }
+
+  // -----------------------------------------------------------------------
+  // denotational semantics
+  // -----------------------------------------------------------------------
+  function 〚Command〛: #Machine# × #List<Command># → #Machine#
+  {
+    equation 〚Forward[n]〛(machine, commands) = machine0
+    {
+        # System.out.println("<FORWARD-" + n + ", " + commands + ", " + machine + "> =>>"); #
+        {# machine.executeForward(n); #}
+        machine0 = machine;
+    }
+  equation 〚ForwardDefault〛(machine, commands) = machine0
+   {
+       # System.out.println("<FORWARD (default 1), " + commands + ", " + machine + "> =>>"); #
+        {# machine.execute(Instruction.FORWARD); #}  // ✅ Execute as FORWARD
+             machine0 = machine;
+   }
+    equation 〚TurnLeft〛(machine, commands) = machine0
+    {
+        # System.out.println("<TLEFT, " + commands + ", " + machine + "> =>>"); #
+        {# machine.execute(Instruction.TLEFT); #}
+        machine0 = machine;
+    }
+    equation 〚TurnRight〛(machine, commands) = machine0
+    {
+        # System.out.println("<TRIGHT, " + commands + ", " + machine + "> =>>"); #
+        {# machine.execute(Instruction.TRIGHT); #}
+        machine0 = machine;
+    }
+    equation 〚Seq[c1,c2]〛(machine, commands) = machine0
+    {
+        machine1 = 〚c1〛(machine, commands);
+        machine0 = 〚c2〛(machine1, commands);
+    }
+        equation 〚Reset〛(machine, commands) = machine0
+        {
+            # System.out.println("<RESET:" + commands + ", " + machine + "> =>>"); #
+            {# machine.execute(Instruction.RESET); #}
+            machine0 = machine;
+        }
+        equation 〚Skip〛(machine, commands) = machine0
+        {
+            # System.out.println("<SKIP:" + commands + ", " + machine + "> =>>"); #
+            {# machine.execute(Instruction.SKIP); #}
+            machine0 = machine;
+        }
+  }
+
+  function 〚Program〛: #Machine# → #Machine#
+  {
+    equation 〚Prog[c]〛(machine) = machine0
+    {
+        machine0 = 〚c〛(machine, # List.of(c) #);
+    }
+  }
+}
+
+// -------------------------------------------------------------------------
+// end of file
+// -------------------------------------------------------------------------
