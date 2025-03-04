@@ -3,21 +3,25 @@ import java.awt.*;
 import java.io.File;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.util.List;
 
 public class KarelVisualizer extends JPanel {
-    private int x = 0, y = 0;  // ✅ Start at (0,0) (bottom-left)
-    private int direction = 0; // 0 = North, 1 = East, 2 = South, 3 = West
+    private int x = 0, y = 0;
+    private int direction = 0;
     private static final int CELL_SIZE = 50;
-    private static final int GRID_SIZE = 10; // Grid is 10x10
+    private static final int GRID_SIZE = 10;
 
     private BufferedImage northImage, southImage, eastImage, westImage;
+    private final List<int[]> movementHistory;
+    private int stepIndex = 0; // ✅ Start at the first position
 
-    public KarelVisualizer() {
+    public KarelVisualizer(List<int[]> movementHistory) {
+        this.movementHistory = movementHistory;
         setPreferredSize(new Dimension(GRID_SIZE * CELL_SIZE, GRID_SIZE * CELL_SIZE));
         loadImages();
     }
 
-    // Load robot images from the "photos" folder
+    // Load images
     private void loadImages() {
         try {
             northImage = ImageIO.read(new File("photos/north.png"));
@@ -29,11 +33,28 @@ public class KarelVisualizer extends JPanel {
         }
     }
 
-    // Update robot position and direction
-    public void updatePosition(int newX, int newY, int newDirection) {
-        this.x = newX;
-        this.y = newY;
-        this.direction = newDirection;
+    // Move to the next step
+    public void moveForward() {
+        if (stepIndex < movementHistory.size() - 1) {
+            stepIndex++;
+            updateRobotPosition();
+        }
+    }
+
+    // ✅ Move backward, ensuring it can return to the starting position
+    public void moveBackward() {
+        if (stepIndex > 0) {  // ✅ Allow going all the way back to the starting position
+            stepIndex--;
+            updateRobotPosition();
+        }
+    }
+
+    // ✅ Updates the robot position based on history
+    private void updateRobotPosition() {
+        int[] state = movementHistory.get(stepIndex);
+        x = state[0];
+        y = state[1];
+        direction = state[2];
         repaint();
     }
 
@@ -52,7 +73,7 @@ public class KarelVisualizer extends JPanel {
             g.drawLine(0, i * CELL_SIZE, GRID_SIZE * CELL_SIZE, i * CELL_SIZE);
         }
 
-        // Choose the correct robot image based on direction
+        // Choose correct robot image
         BufferedImage robotImage = switch (direction) {
             case 0 -> northImage;
             case 1 -> eastImage;
@@ -61,20 +82,34 @@ public class KarelVisualizer extends JPanel {
             default -> northImage;
         };
 
-        // Draw robot image at (x, y), flipping the Y-axis to match bottom-left start
+        // Draw robot image at (x, y)
         if (robotImage != null) {
             g.drawImage(robotImage, x * CELL_SIZE + 5, (GRID_SIZE - 1 - y) * CELL_SIZE + 5, CELL_SIZE - 10, CELL_SIZE - 10, this);
-        } else {
-            // If the image fails to load, draw a fallback red circle
-            g.setColor(Color.RED);
-            g.fillOval(x * CELL_SIZE + 10, (GRID_SIZE - 1 - y) * CELL_SIZE + 10, CELL_SIZE - 20, CELL_SIZE - 20);
         }
     }
 
+    // ✅ Create GUI with Arrow Buttons
     public static void createAndShowGUI(KarelVisualizer visualizer) {
         JFrame frame = new JFrame("Karel Robot Visualization");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.add(visualizer);
+        frame.setLayout(new BorderLayout());
+
+        // Add grid visualization
+        frame.add(visualizer, BorderLayout.CENTER);
+
+        // Create button panel
+        JPanel buttonPanel = new JPanel();
+        JButton backwardButton = new JButton("⬅️"); // Left Arrow
+        JButton forwardButton = new JButton("➡️");  // Right Arrow
+
+        // Button actions
+        forwardButton.addActionListener(e -> visualizer.moveForward());
+        backwardButton.addActionListener(e -> visualizer.moveBackward());
+
+        buttonPanel.add(backwardButton);
+        buttonPanel.add(forwardButton);
+        frame.add(buttonPanel, BorderLayout.SOUTH);
+
         frame.pack();
         frame.setVisible(true);
     }

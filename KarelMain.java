@@ -36,20 +36,12 @@ public class KarelMain {
         // Initialize the Machine
         Karel.Machine machine = new Karel.Machine();
 
-        // Create and display the visualization
-        KarelVisualizer visualizer = new KarelVisualizer();
-        SwingUtilities.invokeLater(() -> KarelVisualizer.createAndShowGUI(visualizer));
-
-        // Execute the program and update visualization
+        // Execute the program
         Karel.Machine finalMachine = Program_.operation(program).apply(machine);
 
-        // Visualization update loop
-        visualizer.updatePosition(machine.getX(), machine.getY(), machine.getDirection()); // ✅ Update with direction
-        try {
-            Thread.sleep(500); // ✅ Slow down movement for visualization
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        // ✅ Create and display visualization with movement history
+        KarelVisualizer visualizer = new KarelVisualizer(finalMachine.getHistory());
+        SwingUtilities.invokeLater(() -> KarelVisualizer.createAndShowGUI(visualizer));
 
         // Display final machine state
         System.out.println("Final Machine State:");

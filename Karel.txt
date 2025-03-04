@@ -70,68 +70,81 @@ import static lang.karel.Karel.*;
   // -----------------------------------------------------------------------
   // abstract machine instructions
   // -----------------------------------------------------------------------
-  code
-  {#
-    public enum Instruction { FORWARD, TLEFT, TRIGHT, RESET, SKIP }
-    public static class Machine
-    {
-      private int x = 0, y = 0, direction = 0; // 0: North, 1: East, 2: South, 3: West
-      public int getX() { return x; }
-      public int getY() { return y; }
-      public int getDirection() { return direction; }
-      // Handle both FORWARD and FORWARD-N
-      public void executeForward(int n)
-      {
-        if (n == 1) {
-            System.out.println("<FORWARD, E, " + this + "> =>>");
-            execute(Instruction.FORWARD);
-        } else {
+code
+{#
+    import java.util.ArrayList;
+    import java.util.List;
+
+    public enum Instruction { FORWARD, FORWARD_N, TLEFT, TRIGHT, RESET, SKIP }
+
+    public static class Machine {
+        private int x = 0, y = 0, direction = 0;
+        private List<int[]> movementHistory = new ArrayList<>();
+
+        public int getX() { return x; }
+        public int getY() { return y; }
+        public int getDirection() { return direction; }
+        public List<int[]> getHistory() { return movementHistory; }
+
+        public Machine() {
+            movementHistory.add(new int[]{x, y, direction}); // ✅ Store Initial Position
+        }
+
+        public void executeForward(int n) {
             for (int i = 0; i < n; i++) {
-                System.out.println("<FORWARD, E, " + this + "> =>>");
                 execute(Instruction.FORWARD);
+                if (movementHistory.isEmpty() || hasPositionChanged()) {  // ✅ Only store new positions
+                    movementHistory.add(new int[]{x, y, direction});
+                }
             }
         }
-      }
 
-      public void execute(Instruction inst, int... params)
-      {
-        switch (inst)
-        {
-          case FORWARD:
-            move(1);
-            break;
-          case TLEFT:
-            direction = (direction + 3) % 4; // Turn counterclockwise
-            break;
-          case TRIGHT:
-            direction = (direction + 1) % 4; // Turn clockwise
-            break;
-          case RESET:
-            x = 0; y = 0; direction = 0;
-            break;
-          case SKIP:
-            break; // Do nothing
+        public void execute(Instruction inst, int... params) {
+            int oldX = x, oldY = y, oldDir = direction; // ✅ Track old position
+
+            switch (inst) {
+                case FORWARD:
+                    move(1);
+                    break;
+                case TLEFT:
+                    direction = (direction + 3) % 4;
+                    break;
+                case TRIGHT:
+                    direction = (direction + 1) % 4;
+                    break;
+                case RESET:
+                    x = 0; y = 0; direction = 0;
+                    break;
+                case SKIP:
+                    break;
+            }
+            if (hasPositionChanged()) {  // ✅ Only store if position/direction changed
+                movementHistory.add(new int[]{x, y, direction});
+            }
         }
-      }
 
-      private void move(int steps)
-      {
-        switch (direction)
-        {
-          case 0: y += steps; break; // North
-          case 1: x += steps; break; // East
-          case 2: y -= steps; break; // South
-          case 3: x -= steps; break; // West
+        private void move(int steps) {
+            switch (direction) {
+                case 0: y += steps; break;
+                case 1: x += steps; break;
+                case 2: y -= steps; break;
+                case 3: x -= steps; break;
+            }
         }
-      }
 
-      @Override
-      public String toString()
-      {
-        return "((" + x + ", " + y + "), " + (direction * 90) + ")";
-      }
+        private boolean hasPositionChanged() {  // ✅ Ensures no duplicate positions
+            int[] last = movementHistory.get(movementHistory.size() - 1);
+            return last[0] != x || last[1] != y || last[2] != direction;
+        }
+
+        @Override
+        public String toString() {
+            return "((" + x + ", " + y + "), " + (direction * 90) + ")";
+        }
     }
-  #}
+#}
+
+
   code
   {#
       public static class Program {
