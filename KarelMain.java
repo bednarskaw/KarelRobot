@@ -1,14 +1,33 @@
 import lang.karel.*;
 import javax.swing.*;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 public class KarelMain {
+    private static final int GRID_SIZE = 10;
+    private static final boolean[][] beepers = new boolean[GRID_SIZE][GRID_SIZE]; // ✅ Store beeper positions
+
     public static void main(String[] args) {
+        // ✅ Generate random beeper positions before program input
+        placeRandomBeepers(5); // Change the number to generate more or fewer beepers
+
+        // ✅ Display beeper positions in the console
+        System.out.println("Beeper positions:");
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                if (beepers[i][j]) {
+                    System.out.println("Beeper at: (" + i + ", " + j + ")");
+                }
+            }
+        }
+
         String programInput = "";
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             StringBuilder inputBuilder = new StringBuilder();
-            System.out.println("Enter your program (type 'END' on a new line to finish):");
+            System.out.println("\nEnter your program (type 'END' on a new line to finish):");
 
             String line;
             while ((line = reader.readLine()) != null) {
@@ -34,17 +53,30 @@ public class KarelMain {
         Program_program.operation(program).apply();
 
         // Initialize the Machine
-        Karel.Machine machine = new Karel.Machine();
+        Karel.Machine machine = new Karel.Machine(beepers);
 
         // Execute the program
         Karel.Machine finalMachine = Program_.operation(program).apply(machine);
 
-        // ✅ Create and display visualization with movement history
-        KarelVisualizer visualizer = new KarelVisualizer(finalMachine.getHistory());
+        // ✅ Pass beeper positions to KarelVisualizer
+        KarelVisualizer visualizer = new KarelVisualizer(finalMachine.getHistory(), beepers);
         SwingUtilities.invokeLater(() -> KarelVisualizer.createAndShowGUI(visualizer));
 
         // Display final machine state
         System.out.println("Final Machine State:");
         System.out.println(finalMachine);
+    }
+
+    // ✅ Generate random beeper positions
+    private static void placeRandomBeepers(int count) {
+        Random rand = new Random();
+        for (int i = 0; i < count; i++) {
+            int bx, by;
+            do {
+                bx = rand.nextInt(GRID_SIZE);
+                by = rand.nextInt(GRID_SIZE);
+            } while (beepers[bx][by]); // Avoid placing two beepers in the same spot
+            beepers[bx][by] = true;
+        }
     }
 }

@@ -15,6 +15,8 @@ dCommand returns [ Command _result ] :
 |  'turn right' { $_result = new Command.TurnRight(); }
 |  'reset' { $_result = new Command.Reset(); }
 |  'skip' { $_result = new Command.Skip(); }
+|  'putbeeper' { $_result = new Command.PutBeeper(); }
+|  'pickbeeper' { $_result = new Command.PickBeeper(); }
 |  c1=dCommand ';' c2=dCommand { $_result = new Command.Seq($c1._result, $c2._result); }
 ;
 dProgram returns [ Program _result ] :

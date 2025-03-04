@@ -57,6 +57,18 @@ public final class Command_command
         {
         };
       }
+      case Command.PutBeeper() ->
+      {
+        return (_Operation)() -> 
+        {
+        };
+      }
+      case Command.PickBeeper() ->
+      {
+        return (_Operation)() -> 
+        {
+        };
+      }
       case Command.Seq(var c1, var c2) ->
       {
         var _1 = Command_command.operation(c1);

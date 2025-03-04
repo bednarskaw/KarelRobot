@@ -4,7 +4,7 @@ import java.util.*;
 import static lang.karel.Karel.*;
     
 public sealed interface Command permits
-Command.Forward, Command.ForwardDefault, Command.TurnLeft, Command.TurnRight, Command.Reset, Command.Skip, Command.Seq
+Command.Forward, Command.ForwardDefault, Command.TurnLeft, Command.TurnRight, Command.Reset, Command.Skip, Command.PutBeeper, Command.PickBeeper, Command.Seq
 {
   public record Forward(String _1) implements Command
   {
@@ -58,6 +58,24 @@ Command.Forward, Command.ForwardDefault, Command.TurnLeft, Command.TurnRight, Co
     {
       String _result;
        _result = "SKIP"; 
+      return _result;
+    }
+  }
+  public record PutBeeper() implements Command
+  {
+    public String toString()
+    {
+      String _result;
+       _result = "PUTBEEPER"; 
+      return _result;
+    }
+  }
+  public record PickBeeper() implements Command
+  {
+    public String toString()
+    {
+      String _result;
+       _result = "PICKBEEPER"; 
       return _result;
     }
   }

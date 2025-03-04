@@ -37,7 +37,7 @@ public final class Command_
         return (_Operation)(var machine, var commands) -> 
         {
           Machine machine0;
-           System.out.println("<FORWARD (default 1), " + commands + ", " + machine + "> =>>"); 
+           System.out.println("<FORWARD, " + commands + ", " + machine + "> =>>"); 
            machine.execute(Instruction.FORWARD); 
           machine0 = machine;
           return machine0;
@@ -61,6 +61,28 @@ public final class Command_
           Machine machine0;
            System.out.println("<TRIGHT, " + commands + ", " + machine + "> =>>"); 
            machine.execute(Instruction.TRIGHT); 
+          machine0 = machine;
+          return machine0;
+        };
+      }
+      case Command.PutBeeper() ->
+      {
+        return (_Operation)(var machine, var commands) -> 
+        {
+          Machine machine0;
+           System.out.println("<PUTBEEPER, " + commands + ", " + machine + "> =>>"); 
+           machine.execute(Instruction.PUTBEEPER); 
+          machine0 = machine;
+          return machine0;
+        };
+      }
+      case Command.PickBeeper() ->
+      {
+        return (_Operation)(var machine, var commands) -> 
+        {
+          Machine machine0;
+           System.out.println("<PICKBEEPER, " + commands + ", " + machine + "> =>>"); 
+           machine.execute(Instruction.PICKBEEPER); 
           machine0 = machine;
           return machine0;
         };

@@ -21,7 +21,7 @@ import static lang.karel.Karel.*;
   domains
   {
     Command = Forward[NUM] + ForwardDefault + TurnLeft + TurnRight + Reset + Skip
-            + Seq[Command,Command];
+             + PutBeeper + PickBeeper + Seq[Command,Command];
     Program = Prog[Command];
   }
 
@@ -38,6 +38,8 @@ import static lang.karel.Karel.*;
       case TurnRight → # _result = "TRIGHT"; #;
       case Reset → # _result = "RESET"; #;
       case Skip → # _result = "SKIP"; #;
+      case PutBeeper → # _result = "PUTBEEPER"; #;
+      case PickBeeper → # _result = "PICKBEEPER"; #;
       case Seq[c1,c2] → # _result = c1 + ":" + c2; #;
     }
     domain Program
@@ -59,7 +61,9 @@ import static lang.karel.Karel.*;
       case # 'turn right' # → TurnRight;
       case # 'reset' # → Reset;
       case # 'skip' # → Skip;
-      case # c1=dCommand ';' c2=dCommand # → Seq[c1,c2];
+      case # 'putbeeper' # → PutBeeper;  // ✅ Fix putbeeper parsing
+      case # 'pickbeeper' # → PickBeeper;  // ✅ Fix pickbeeper parsing
+      case # c1=dCommand ';' c2=dCommand # → Seq[c1,c2]; // ✅ Ensures chaining commands works
     }
     domain Program
     {
@@ -72,28 +76,36 @@ import static lang.karel.Karel.*;
   // -----------------------------------------------------------------------
 code
 {#
-    import java.util.ArrayList;
-    import java.util.List;
-
-    public enum Instruction { FORWARD, FORWARD_N, TLEFT, TRIGHT, RESET, SKIP }
+    public enum Instruction { FORWARD, TLEFT, TRIGHT, RESET, SKIP, PUTBEEPER, PICKBEEPER }
 
     public static class Machine {
         private int x = 0, y = 0, direction = 0;
+        private boolean[][] beepersGrid = new boolean[10][10];
+        private int beeperCount = 0;
         private List<int[]> movementHistory = new ArrayList<>();
 
         public int getX() { return x; }
         public int getY() { return y; }
         public int getDirection() { return direction; }
+        public int getBeeperCount() { return beeperCount; }
+        public boolean[][] getBeepersGrid() { return beepersGrid; }
         public List<int[]> getHistory() { return movementHistory; }
 
-        public Machine() {
-            movementHistory.add(new int[]{x, y, direction}); // ✅ Store Initial Position
+        public Machine(boolean[][] initialBeepers) {
+            movementHistory.add(new int[]{x, y, direction});
+
+            for (int i = 0; i < 10; i++) {
+                for (int j = 0; j < 10; j++) {
+                    beepersGrid[i][j] = initialBeepers[i][j];
+                }
+            }
         }
+
 
         public void executeForward(int n) {
             for (int i = 0; i < n; i++) {
                 execute(Instruction.FORWARD);
-                if (movementHistory.isEmpty() || hasPositionChanged()) {  // ✅ Only store new positions
+                if (movementHistory.isEmpty() || hasPositionChanged()) {
                     movementHistory.add(new int[]{x, y, direction});
                 }
             }
@@ -114,8 +126,15 @@ code
                     break;
                 case RESET:
                     x = 0; y = 0; direction = 0;
+                    beeperCount = 0;
                     break;
                 case SKIP:
+                    break;
+                 case PUTBEEPER:
+                    putBeeper();
+                    break;
+                case PICKBEEPER:
+                    pickBeeper();
                     break;
             }
             if (hasPositionChanged()) {  // ✅ Only store if position/direction changed
@@ -137,13 +156,36 @@ code
             return last[0] != x || last[1] != y || last[2] != direction;
         }
 
+        private void putBeeper() {
+            if (beeperCount > 0) { // ✅ Only allow placing a beeper if the robot has one
+                if (!beepersGrid[x][y]) {
+                    beepersGrid[x][y] = true;
+                    beeperCount--;  // ✅ Decrease beeper inventory
+                    System.out.println("<PUTBEEPER, (" + x + ", " + y + ")>");
+                } else {
+                    System.out.println("❌ Cannot place beeper: Already exists at (" + x + ", " + y + ")");
+                }
+            } else {
+                System.out.println("❌ Cannot place beeper: No beepers in inventory!");
+            }
+        }
+
+        private void pickBeeper() {
+            if (beepersGrid[x][y]) {
+                beepersGrid[x][y] = false;
+                beeperCount++;  // ✅ Increase beeper inventory
+                System.out.println("<PICKBEEPER, (" + x + ", " + y + ")>");
+            } else {
+                System.out.println("❌ Cannot pick beeper: No beeper at (" + x + ", " + y + ")");
+            }
+        }
+
         @Override
         public String toString() {
             return "((" + x + ", " + y + "), " + (direction * 90) + ")";
         }
     }
 #}
-
 
   code
   {#
@@ -180,6 +222,12 @@ code
       inference ⊢ Skip: command
       {
       }
+      inference ⊢ PutBeeper: command
+      {
+      }
+      inference ⊢ PickBeeper: command
+      {
+      }
       inference ⊢ Seq[c1,c2]: command
       {
           ⊢ c1: command;
@@ -207,7 +255,7 @@ code
     }
   equation 〚ForwardDefault〛(machine, commands) = machine0
    {
-       # System.out.println("<FORWARD (default 1), " + commands + ", " + machine + "> =>>"); #
+       # System.out.println("<FORWARD, " + commands + ", " + machine + "> =>>"); #
         {# machine.execute(Instruction.FORWARD); #}  // ✅ Execute as FORWARD
              machine0 = machine;
    }
@@ -221,6 +269,18 @@ code
     {
         # System.out.println("<TRIGHT, " + commands + ", " + machine + "> =>>"); #
         {# machine.execute(Instruction.TRIGHT); #}
+        machine0 = machine;
+    }
+    equation 〚PutBeeper〛(machine, commands) = machine0
+    {
+        # System.out.println("<PUTBEEPER, " + commands + ", " + machine + "> =>>"); #
+        {# machine.execute(Instruction.PUTBEEPER); #}  // ✅ Calls Java function to update grid
+        machine0 = machine;
+    }
+    equation 〚PickBeeper〛(machine, commands) = machine0
+    {
+        # System.out.println("<PICKBEEPER, " + commands + ", " + machine + "> =>>"); #
+        {# machine.execute(Instruction.PICKBEEPER); #}  // ✅ Calls Java function to remove from grid
         machine0 = machine;
     }
     equation 〚Seq[c1,c2]〛(machine, commands) = machine0

@@ -5,25 +5,37 @@ import static lang.karel.Karel.*;
     
 public final class Karel
 {
-    public enum Instruction { FORWARD, FORWARD_N, TLEFT, TRIGHT, RESET, SKIP }
+
+    public enum Instruction { FORWARD, TLEFT, TRIGHT, RESET, SKIP, PUTBEEPER, PICKBEEPER }
 
     public static class Machine {
         private int x = 0, y = 0, direction = 0;
+        private boolean[][] beepersGrid = new boolean[10][10];
+        private int beeperCount = 0;
         private List<int[]> movementHistory = new ArrayList<>();
 
         public int getX() { return x; }
         public int getY() { return y; }
         public int getDirection() { return direction; }
+        public int getBeeperCount() { return beeperCount; }
+        public boolean[][] getBeepersGrid() { return beepersGrid; }
         public List<int[]> getHistory() { return movementHistory; }
 
-        public Machine() {
-            movementHistory.add(new int[]{x, y, direction}); // ✅ Store Initial Position
+        public Machine(boolean[][] initialBeepers) {
+            movementHistory.add(new int[]{x, y, direction});
+
+            for (int i = 0; i < 10; i++) {
+                for (int j = 0; j < 10; j++) {
+                    beepersGrid[i][j] = initialBeepers[i][j];
+                }
+            }
         }
+
 
         public void executeForward(int n) {
             for (int i = 0; i < n; i++) {
                 execute(Instruction.FORWARD);
-                if (movementHistory.isEmpty() || hasPositionChanged()) {  // ✅ Only store new positions
+                if (movementHistory.isEmpty() || hasPositionChanged()) {
                     movementHistory.add(new int[]{x, y, direction});
                 }
             }
@@ -44,8 +56,15 @@ public final class Karel
                     break;
                 case RESET:
                     x = 0; y = 0; direction = 0;
+                    beeperCount = 0;
                     break;
                 case SKIP:
+                    break;
+                 case PUTBEEPER:
+                    putBeeper();
+                    break;
+                case PICKBEEPER:
+                    pickBeeper();
                     break;
             }
             if (hasPositionChanged()) {  // ✅ Only store if position/direction changed
@@ -65,6 +84,30 @@ public final class Karel
         private boolean hasPositionChanged() {  // ✅ Ensures no duplicate positions
             int[] last = movementHistory.get(movementHistory.size() - 1);
             return last[0] != x || last[1] != y || last[2] != direction;
+        }
+
+        private void putBeeper() {
+            if (beeperCount > 0) { // ✅ Only allow placing a beeper if the robot has one
+                if (!beepersGrid[x][y]) {
+                    beepersGrid[x][y] = true;
+                    beeperCount--;  // ✅ Decrease beeper inventory
+                    System.out.println("<PUTBEEPER, (" + x + ", " + y + ")>");
+                } else {
+                    System.out.println("❌ Cannot place beeper: Already exists at (" + x + ", " + y + ")");
+                }
+            } else {
+                System.out.println("❌ Cannot place beeper: No beepers in inventory!");
+            }
+        }
+
+        private void pickBeeper() {
+            if (beepersGrid[x][y]) {
+                beepersGrid[x][y] = false;
+                beeperCount++;  // ✅ Increase beeper inventory
+                System.out.println("<PICKBEEPER, (" + x + ", " + y + ")>");
+            } else {
+                System.out.println("❌ Cannot pick beeper: No beeper at (" + x + ", " + y + ")");
+            }
         }
 
         @Override
