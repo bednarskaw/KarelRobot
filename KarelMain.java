@@ -59,7 +59,13 @@ public class KarelMain {
         Karel.Machine finalMachine = Program_.operation(program).apply(machine);
 
         // ✅ Pass beeper positions to KarelVisualizer
-        KarelVisualizer visualizer = new KarelVisualizer(finalMachine.getHistory(), beepers);
+        KarelVisualizer visualizer = new KarelVisualizer(
+                finalMachine.getHistory(),
+                finalMachine.getBeeperHistory(),
+                finalMachine.getBeeperInventoryHistory()
+        );
+
+
         SwingUtilities.invokeLater(() -> KarelVisualizer.createAndShowGUI(visualizer));
 
         // Display final machine state

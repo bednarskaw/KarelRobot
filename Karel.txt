@@ -32,7 +32,7 @@ import static lang.karel.Karel.*;
   {
     domain Command
     {
-      case Forward[n] → # _result = n == 1 ? "FORWARD" : "FORWARD-" + n; #;
+      case Forward[n] → # _result = n == "1" ? "FORWARD" : "FORWARD-" + n; #;
       case ForwardDefault → # _result = "FORWARD"; #;
       case TurnLeft → # _result = "TLEFT"; #;
       case TurnRight → # _result = "TRIGHT"; #;
@@ -61,15 +61,16 @@ import static lang.karel.Karel.*;
       case # 'turn right' # → TurnRight;
       case # 'reset' # → Reset;
       case # 'skip' # → Skip;
-      case # 'putbeeper' # → PutBeeper;  // ✅ Fix putbeeper parsing
-      case # 'pickbeeper' # → PickBeeper;  // ✅ Fix pickbeeper parsing
-      case # c1=dCommand ';' c2=dCommand # → Seq[c1,c2]; // ✅ Ensures chaining commands works
+      case # 'putbeeper' # → PutBeeper;
+      case # 'pickbeeper' # → PickBeeper;
+      case # c1=dCommand ';' c2=dCommand # → Seq[c1,c2];
     }
     domain Program
     {
       case # c=dCommand ( ';' c2=dCommand )* ';'? EOF # → Prog[c];
     }
   }
+
 
   // -----------------------------------------------------------------------
   // abstract machine instructions
@@ -83,6 +84,8 @@ code
         private boolean[][] beepersGrid = new boolean[10][10];
         private int beeperCount = 0;
         private List<int[]> movementHistory = new ArrayList<>();
+        private List<boolean[][]> beeperHistory = new ArrayList<>();
+        private List<Integer> beeperInventoryHistory = new ArrayList<>();
 
         public int getX() { return x; }
         public int getY() { return y; }
@@ -90,9 +93,13 @@ code
         public int getBeeperCount() { return beeperCount; }
         public boolean[][] getBeepersGrid() { return beepersGrid; }
         public List<int[]> getHistory() { return movementHistory; }
+        public List<boolean[][]> getBeeperHistory() { return beeperHistory; }
+        public List<Integer> getBeeperInventoryHistory() { return beeperInventoryHistory; }
 
         public Machine(boolean[][] initialBeepers) {
             movementHistory.add(new int[]{x, y, direction});
+            beeperHistory.add(copyBeepers(initialBeepers));
+            beeperInventoryHistory.add(beeperCount);
 
             for (int i = 0; i < 10; i++) {
                 for (int j = 0; j < 10; j++) {
@@ -112,7 +119,8 @@ code
         }
 
         public void execute(Instruction inst, int... params) {
-            int oldX = x, oldY = y, oldDir = direction; // ✅ Track old position
+            int oldX = x, oldY = y, oldDir = direction;
+            boolean[][] oldBeepers = copyBeepers(beepersGrid);
 
             switch (inst) {
                 case FORWARD:
@@ -137,8 +145,10 @@ code
                     pickBeeper();
                     break;
             }
-            if (hasPositionChanged()) {  // ✅ Only store if position/direction changed
+            if (hasPositionChanged()) {
                 movementHistory.add(new int[]{x, y, direction});
+                beeperHistory.add(copyBeepers(beepersGrid));
+                beeperInventoryHistory.add(beeperCount);
             }
         }
 
@@ -151,9 +161,17 @@ code
             }
         }
 
-        private boolean hasPositionChanged() {  // ✅ Ensures no duplicate positions
+        private boolean hasPositionChanged() {
             int[] last = movementHistory.get(movementHistory.size() - 1);
             return last[0] != x || last[1] != y || last[2] != direction;
+        }
+
+        private boolean[][] copyBeepers(boolean[][] original) {
+            boolean[][] copy = new boolean[10][10];
+            for (int i = 0; i < 10; i++) {
+                System.arraycopy(original[i], 0, copy[i], 0, 10);
+            }
+            return copy;
         }
 
         private void putBeeper() {
@@ -256,7 +274,7 @@ code
   equation 〚ForwardDefault〛(machine, commands) = machine0
    {
        # System.out.println("<FORWARD, " + commands + ", " + machine + "> =>>"); #
-        {# machine.execute(Instruction.FORWARD); #}  // ✅ Execute as FORWARD
+        {# machine.execute(Instruction.FORWARD); #}
              machine0 = machine;
    }
     equation 〚TurnLeft〛(machine, commands) = machine0

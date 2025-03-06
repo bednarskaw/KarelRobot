@@ -8,17 +8,21 @@ import java.util.List;
 public class KarelVisualizer extends JPanel {
     private int x = 0, y = 0;
     private int direction = 0;
+    private int beeperCount = 0;  // ✅ Track the number of beepers in inventory
     private static final int CELL_SIZE = 50;
     private static final int GRID_SIZE = 10;
 
     private BufferedImage northImage, southImage, eastImage, westImage, beeperImage;
     private final List<int[]> movementHistory;
-    private final boolean[][] beepers;
+    private final List<boolean[][]> beeperHistory;
+    private final List<Integer> beeperInventoryHistory;
     private int stepIndex = 0;
 
-    public KarelVisualizer(List<int[]> movementHistory, boolean[][] beepers) {
+
+    public KarelVisualizer(List<int[]> movementHistory, List<boolean[][]> beeperHistory, List<Integer> beeperInventoryHistory) {
         this.movementHistory = movementHistory;
-        this.beepers = beepers;
+        this.beeperHistory = beeperHistory;
+        this.beeperInventoryHistory = beeperInventoryHistory;
         setPreferredSize(new Dimension(GRID_SIZE * CELL_SIZE, GRID_SIZE * CELL_SIZE));
         loadImages();
     }
@@ -73,15 +77,16 @@ public class KarelVisualizer extends JPanel {
         repaint();
     }
 
-    // ✅ Updates beepers when `putbeeper` or `pickbeeper` is executed
-    public void updateBeepers(boolean[][] newBeepers) {
-        for (int i = 0; i < GRID_SIZE; i++) {
-            for (int j = 0; j < GRID_SIZE; j++) {
-                beepers[i][j] = newBeepers[i][j];
-            }
-        }
-        repaint();
-    }
+    // ✅ Updates the visualization when `putbeeper` or `pickbeeper` is executed
+//    public void updateBeepers(boolean[][] newBeepers, int newBeeperCount) {
+//        for (int i = 0; i < GRID_SIZE; i++) {
+//            for (int j = 0; j < GRID_SIZE; j++) {
+//                beepers[i][j] = newBeepers[i][j];
+//            }
+//        }
+//        beeperCount = newBeeperCount; // ✅ Update the beeper inventory count
+//        repaint();
+//    }
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -91,23 +96,28 @@ public class KarelVisualizer extends JPanel {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, getWidth(), getHeight());
 
-        // ✅ Draw white grid
+        // ✅ Draw white grid lines
         g.setColor(Color.WHITE);
         for (int i = 0; i <= GRID_SIZE; i++) {
-            g.drawLine(i * CELL_SIZE, 0, i * CELL_SIZE, GRID_SIZE * CELL_SIZE);
-            g.drawLine(0, i * CELL_SIZE, GRID_SIZE * CELL_SIZE, i * CELL_SIZE);
+            g.drawLine(i * CELL_SIZE, 0, i * CELL_SIZE, GRID_SIZE * CELL_SIZE); // Vertical lines
+            g.drawLine(0, i * CELL_SIZE, GRID_SIZE * CELL_SIZE, i * CELL_SIZE); // Horizontal lines
         }
 
         // ✅ Draw beepers at their positions
+        boolean[][] currentBeepers = beeperHistory.get(stepIndex);
         if (beeperImage != null) {
             for (int i = 0; i < GRID_SIZE; i++) {
                 for (int j = 0; j < GRID_SIZE; j++) {
-                    if (beepers[i][j]) {
+                    if (currentBeepers[i][j]) {
                         g.drawImage(beeperImage, i * CELL_SIZE + 15, (GRID_SIZE - 1 - j) * CELL_SIZE + 15, CELL_SIZE - 30, CELL_SIZE - 30, this);
                     }
                 }
             }
         }
+
+        // ✅ Draw beeper inventory count
+        g.setColor(Color.YELLOW);
+        g.drawString("Beeper Inventory: " + beeperInventoryHistory.get(stepIndex), 10, 20);
 
         // ✅ Choose correct robot image based on direction
         BufferedImage robotImage = switch (direction) {
@@ -123,6 +133,7 @@ public class KarelVisualizer extends JPanel {
             g.drawImage(robotImage, x * CELL_SIZE + 5, (GRID_SIZE - 1 - y) * CELL_SIZE + 5, CELL_SIZE - 10, CELL_SIZE - 10, this);
         }
     }
+
 
     // ✅ Create GUI with Arrow Buttons and Double Arrows
     public static void createAndShowGUI(KarelVisualizer visualizer) {

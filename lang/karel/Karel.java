@@ -5,7 +5,6 @@ import static lang.karel.Karel.*;
     
 public final class Karel
 {
-
     public enum Instruction { FORWARD, TLEFT, TRIGHT, RESET, SKIP, PUTBEEPER, PICKBEEPER }
 
     public static class Machine {
@@ -13,6 +12,8 @@ public final class Karel
         private boolean[][] beepersGrid = new boolean[10][10];
         private int beeperCount = 0;
         private List<int[]> movementHistory = new ArrayList<>();
+        private List<boolean[][]> beeperHistory = new ArrayList<>();
+        private List<Integer> beeperInventoryHistory = new ArrayList<>();
 
         public int getX() { return x; }
         public int getY() { return y; }
@@ -20,9 +21,13 @@ public final class Karel
         public int getBeeperCount() { return beeperCount; }
         public boolean[][] getBeepersGrid() { return beepersGrid; }
         public List<int[]> getHistory() { return movementHistory; }
+        public List<boolean[][]> getBeeperHistory() { return beeperHistory; }
+        public List<Integer> getBeeperInventoryHistory() { return beeperInventoryHistory; }
 
         public Machine(boolean[][] initialBeepers) {
             movementHistory.add(new int[]{x, y, direction});
+            beeperHistory.add(copyBeepers(initialBeepers));
+            beeperInventoryHistory.add(beeperCount);
 
             for (int i = 0; i < 10; i++) {
                 for (int j = 0; j < 10; j++) {
@@ -42,7 +47,8 @@ public final class Karel
         }
 
         public void execute(Instruction inst, int... params) {
-            int oldX = x, oldY = y, oldDir = direction; // ✅ Track old position
+            int oldX = x, oldY = y, oldDir = direction;
+            boolean[][] oldBeepers = copyBeepers(beepersGrid);
 
             switch (inst) {
                 case FORWARD:
@@ -67,8 +73,10 @@ public final class Karel
                     pickBeeper();
                     break;
             }
-            if (hasPositionChanged()) {  // ✅ Only store if position/direction changed
+            if (hasPositionChanged()) {
                 movementHistory.add(new int[]{x, y, direction});
+                beeperHistory.add(copyBeepers(beepersGrid));
+                beeperInventoryHistory.add(beeperCount);
             }
         }
 
@@ -81,9 +89,17 @@ public final class Karel
             }
         }
 
-        private boolean hasPositionChanged() {  // ✅ Ensures no duplicate positions
+        private boolean hasPositionChanged() {
             int[] last = movementHistory.get(movementHistory.size() - 1);
             return last[0] != x || last[1] != y || last[2] != direction;
+        }
+
+        private boolean[][] copyBeepers(boolean[][] original) {
+            boolean[][] copy = new boolean[10][10];
+            for (int i = 0; i < 10; i++) {
+                System.arraycopy(original[i], 0, copy[i], 0, 10);
+            }
+            return copy;
         }
 
         private void putBeeper() {
