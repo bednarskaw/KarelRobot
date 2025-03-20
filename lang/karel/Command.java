@@ -12,7 +12,7 @@ Command.Forward, Command.ForwardDefault, Command.TurnLeft, Command.TurnRight, Co
     {
       var n = _1;
       String _result;
-       _result = n == "1" ? "FORWARD" : "FORWARD-" + n;
+       _result = n == "1" ? "FORWARD" : "FORWARD-" + n; 
       return _result;
     }
   }

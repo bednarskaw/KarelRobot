@@ -7,7 +7,7 @@ import java.util.Random;
 
 public class KarelMain {
     private static final int GRID_SIZE = 10;
-    private static final boolean[][] beepers = new boolean[GRID_SIZE][GRID_SIZE]; // ✅ Store beeper positions
+    private static final boolean[][] beepers = new boolean[GRID_SIZE][GRID_SIZE];
 
     public static void main(String[] args) {
         // ✅ Generate random beeper positions before program input

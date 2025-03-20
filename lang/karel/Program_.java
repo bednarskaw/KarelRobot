@@ -23,11 +23,14 @@ public final class Program_
     {
       case Program.Prog(var c) ->
       {
-        var _1 = Command_.operation(c);
         return (_Operation)(var machine) -> 
         {
           Machine machine0;
-          machine0 = _1.apply(machine,  List.of(c) );
+          
+           List<String> cmdList = Arrays.asList(c.toString().split(":"));
+           machine.executeCommandList(new ArrayList<>(cmdList));
+        
+          machine0 = machine;
           return machine0;
         };
       }

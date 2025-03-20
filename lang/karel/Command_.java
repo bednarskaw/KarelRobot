@@ -27,7 +27,7 @@ public final class Command_
         {
           Machine machine0;
            System.out.println("<FORWARD-" + n + ", " + commands + ", " + machine + "> =>>"); 
-           machine.executeForward(Integer.parseInt(n));
+           machine.executeForward(Integer.parseInt(n)); 
           machine0 = machine;
           return machine0;
         };
