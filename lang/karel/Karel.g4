@@ -5,18 +5,25 @@ options { language = Java; }
 
 package lang.karel;
 import java.util.*;
+import java.io.*;
+import org.json.*;
+import javax.swing.*;
 import static lang.karel.Karel.*;
+import lang.karel.KarelVisualizer;
     
 }
+dNumber returns [ Number _result ] :
+   n=dNUM { $_result = new Number.Num($n._result); }
+;
 dCommand returns [ Command _result ] :
-   'forward' n=dNUM { $_result = new Command.Forward($n._result); }
-|  'forward' { $_result = new Command.ForwardDefault(); }
-|  'turn left' { $_result = new Command.TurnLeft(); }
-|  'turn right' { $_result = new Command.TurnRight(); }
+   'forward' { $_result = new Command.Forward(); }
+|  'forward' n=dNumber { $_result = new Command.ForwardN($n._result); }
+|  'turn' 'left' { $_result = new Command.TurnLeft(); }
+|  'turn' 'right' { $_result = new Command.TurnRight(); }
+|  'pickbeeper' { $_result = new Command.PickBeeper(); }
+|  'putbeeper' { $_result = new Command.PutBeeper(); }
 |  'reset' { $_result = new Command.Reset(); }
 |  'skip' { $_result = new Command.Skip(); }
-|  'putbeeper' { $_result = new Command.PutBeeper(); }
-|  'pickbeeper' { $_result = new Command.PickBeeper(); }
 |  c1=dCommand ';' c2=dCommand { $_result = new Command.Seq($c1._result, $c2._result); }
 ;
 dProgram returns [ Program _result ] :

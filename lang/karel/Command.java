@@ -1,27 +1,31 @@
 
 package lang.karel;
 import java.util.*;
+import java.io.*;
+import org.json.*;
+import javax.swing.*;
 import static lang.karel.Karel.*;
+import lang.karel.KarelVisualizer;
     
 public sealed interface Command permits
-Command.Forward, Command.ForwardDefault, Command.TurnLeft, Command.TurnRight, Command.Reset, Command.Skip, Command.PutBeeper, Command.PickBeeper, Command.Seq
+Command.Forward, Command.ForwardN, Command.TurnLeft, Command.TurnRight, Command.PutBeeper, Command.PickBeeper, Command.Reset, Command.Skip, Command.Seq
 {
-  public record Forward(String _1) implements Command
-  {
-    public String toString()
-    {
-      var n = _1;
-      String _result;
-       _result = n == "1" ? "FORWARD" : "FORWARD-" + n; 
-      return _result;
-    }
-  }
-  public record ForwardDefault() implements Command
+  public record Forward() implements Command
   {
     public String toString()
     {
       String _result;
        _result = "FORWARD"; 
+      return _result;
+    }
+  }
+  public record ForwardN(Number _1) implements Command
+  {
+    public String toString()
+    {
+      var n = _1;
+      String _result;
+       _result = "FORWARD-" + n; 
       return _result;
     }
   }
@@ -43,24 +47,6 @@ Command.Forward, Command.ForwardDefault, Command.TurnLeft, Command.TurnRight, Co
       return _result;
     }
   }
-  public record Reset() implements Command
-  {
-    public String toString()
-    {
-      String _result;
-       _result = "RESET"; 
-      return _result;
-    }
-  }
-  public record Skip() implements Command
-  {
-    public String toString()
-    {
-      String _result;
-       _result = "SKIP"; 
-      return _result;
-    }
-  }
   public record PutBeeper() implements Command
   {
     public String toString()
@@ -76,6 +62,24 @@ Command.Forward, Command.ForwardDefault, Command.TurnLeft, Command.TurnRight, Co
     {
       String _result;
        _result = "PICKBEEPER"; 
+      return _result;
+    }
+  }
+  public record Reset() implements Command
+  {
+    public String toString()
+    {
+      String _result;
+       _result = "RESET"; 
+      return _result;
+    }
+  }
+  public record Skip() implements Command
+  {
+    public String toString()
+    {
+      String _result;
+       _result = "SKIP"; 
       return _result;
     }
   }

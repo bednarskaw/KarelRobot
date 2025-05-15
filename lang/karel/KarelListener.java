@@ -3,7 +3,11 @@
 
 package lang.karel;
 import java.util.*;
+import java.io.*;
+import org.json.*;
+import javax.swing.*;
 import static lang.karel.Karel.*;
+import lang.karel.KarelVisualizer;
     
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -13,6 +17,16 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link KarelParser}.
  */
 public interface KarelListener extends ParseTreeListener {
+	/**
+	 * Enter a parse tree produced by {@link KarelParser#dNumber}.
+	 * @param ctx the parse tree
+	 */
+	void enterDNumber(KarelParser.DNumberContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link KarelParser#dNumber}.
+	 * @param ctx the parse tree
+	 */
+	void exitDNumber(KarelParser.DNumberContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link KarelParser#dCommand}.
 	 * @param ctx the parse tree

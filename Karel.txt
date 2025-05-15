@@ -1,8 +1,3 @@
-// -------------------------------------------------------------------------
-// Karel.txt
-// SLANG version of a domain-specific language for Karel the Robot
-// -------------------------------------------------------------------------
-
 language Karel
 {
   target java
@@ -11,411 +6,360 @@ language Karel
     {#
 package lang.karel;
 import java.util.*;
+import java.io.*;
+import org.json.*;
+import javax.swing.*;
 import static lang.karel.Karel.*;
+import lang.karel.KarelVisualizer;
     #}
   }
 
-  // ----------------------------------------------------------------------
-  // syntactic domains
-  // ----------------------------------------------------------------------
   domains
   {
-    Command = Forward[NUM] + ForwardDefault + TurnLeft + TurnRight + Reset + Skip
-             + PutBeeper + PickBeeper + Seq[Command,Command];
+    Number = Num[NUM];
+    Command = Forward + ForwardN[Number] + TurnLeft + TurnRight + PutBeeper + PickBeeper + Reset + Skip + Seq[Command,Command];
     Program = Prog[Command];
   }
 
-  // -----------------------------------------------------------------------
-  // printer
-  // -----------------------------------------------------------------------
   printer
   {
+    domain Number { case Num[n] → # _result = n; #; }
     domain Command
     {
-      case Forward[n] → # _result = n == "1" ? "FORWARD" : "FORWARD-" + n; #;
-      case ForwardDefault → # _result = "FORWARD"; #;
+      case Forward → # _result = "FORWARD"; #;
+      case ForwardN[n] → # _result = "FORWARD-" + n; #;
       case TurnLeft → # _result = "TLEFT"; #;
       case TurnRight → # _result = "TRIGHT"; #;
-      case Reset → # _result = "RESET"; #;
-      case Skip → # _result = "SKIP"; #;
       case PutBeeper → # _result = "PUTBEEPER"; #;
       case PickBeeper → # _result = "PICKBEEPER"; #;
+      case Reset → # _result = "RESET"; #;
+      case Skip → # _result = "SKIP"; #;
       case Seq[c1,c2] → # _result = c1 + ":" + c2; #;
     }
-    domain Program
-    {
-      case Prog[c] → # _result = c.toString(); #;
-    }
+    domain Program { case Prog[c] → # _result = c.toString(); #; }
   }
 
-  // -----------------------------------------------------------------------
-  // parser
-  // -----------------------------------------------------------------------
   parser antlr4
   {
+    domain Number { case # n=dNUM # → Num[n]; }
     domain Command
     {
-      case # 'forward' n=dNUM # → Forward[n];
-      case # 'forward' # → ForwardDefault;
-      case # 'turn left' # → TurnLeft;
-      case # 'turn right' # → TurnRight;
+      case # 'forward' # → Forward;
+      case # 'forward' n=dNumber # → ForwardN[n];
+      case # 'turn' 'left' # → TurnLeft;
+      case # 'turn' 'right' # → TurnRight;
+      case # 'pickbeeper' # → PickBeeper;
+      case # 'putbeeper' # → PutBeeper;
       case # 'reset' # → Reset;
       case # 'skip' # → Skip;
-      case # 'putbeeper' # → PutBeeper;
-      case # 'pickbeeper' # → PickBeeper;
       case # c1=dCommand ';' c2=dCommand # → Seq[c1,c2];
     }
-    domain Program
-    {
-      case # c=dCommand ( ';' c2=dCommand )* ';'? EOF # → Prog[c];
-    }
+    domain Program { case # c=dCommand ( ';' c2=dCommand )* ';'? EOF # → Prog[c]; }
   }
-
-
-  // -----------------------------------------------------------------------
-  // abstract machine instructions
-  // -----------------------------------------------------------------------
-code
-{#
-    public enum Instruction { FORWARD, TLEFT, TRIGHT, RESET, SKIP, PUTBEEPER, PICKBEEPER }
-
-    public static class Machine {
-        private int x = 0, y = 0, direction = 0;
-        private boolean[][] beepersGrid = new boolean[10][10];
-        private int beeperCount = 0;
-        private List<int[]> movementHistory = new ArrayList<>();
-        private List<boolean[][]> beeperHistory = new ArrayList<>();
-        private List<Integer> beeperInventoryHistory = new ArrayList<>();
-
-        public int getX() { return x; }
-        public int getY() { return y; }
-        public int getDirection() { return direction; }
-        public int getBeeperCount() { return beeperCount; }
-        public boolean[][] getBeepersGrid() { return beepersGrid; }
-        public List<int[]> getHistory() { return movementHistory; }
-        public List<boolean[][]> getBeeperHistory() { return beeperHistory; }
-        public List<Integer> getBeeperInventoryHistory() { return beeperInventoryHistory; }
-
-        public Machine(boolean[][] initialBeepers) {
-            movementHistory.add(new int[]{x, y, direction});
-            beeperHistory.add(copyBeepers(initialBeepers));
-            beeperInventoryHistory.add(beeperCount);
-
-            for (int i = 0; i < 10; i++) {
-                for (int j = 0; j < 10; j++) {
-                    beepersGrid[i][j] = initialBeepers[i][j];
-                }
-            }
-        }
-
-
-    public void executeForward(int n) {
-        // Initial FORWARD-n print
-        System.out.println("<FORWARD-" + n + ", ε, ((" + x + ", " + y + "), " + (direction * 90) + ")> =>>");
-
-        for (int i = n; i > 2; i--) {
-            // Decompose FORWARD-n to FORWARD:FORWARD-(n-1)
-            System.out.println("<FORWARD:FORWARD-" + (i - 1) + ", ε, ((" + x + ", " + y + "), " + (direction * 90) + ")> =>>");
-            execute(Instruction.FORWARD);  // Move
-            System.out.println("<FORWARD-" + (i - 1) + ", ε, ((" + x + ", " + y + "), " + (direction * 90) + ")> =>>");
-            recordMovementStep();  // ✅ Track move
-        }
-
-        // Final decomposition: FORWARD:FORWARD
-        System.out.println("<FORWARD:FORWARD, ε, ((" + x + ", " + y + "), " + (direction * 90) + ")> =>>");
-        execute(Instruction.FORWARD);  // Move
-        System.out.println("<FORWARD, ε, ((" + x + ", " + y + "), " + (direction * 90) + ")> =>>");
-        recordMovementStep();
-
-        // Final move for the last FORWARD
-        execute(Instruction.FORWARD);  // Move
-        System.out.println("<ε, ε, ((" + x + ", " + y + "), " + (direction * 90) + ")> =>>");
-        recordMovementStep();
-    }
-
-        // Call this ONLY after movement commands
-        private void recordMovementStep() {
-            int[] last = movementHistory.get(movementHistory.size() - 1);
-            if (last[0] != x || last[1] != y || last[2] != direction) {
-                movementHistory.add(new int[]{x, y, direction});
-                beeperHistory.add(copyBeepers(beepersGrid));
-                beeperInventoryHistory.add(beeperCount);
-            }
-        }
-
-        // Call this after ALL commands to ensure step is tracked
-        private void recordAnyStep() {
-            movementHistory.add(new int[]{x, y, direction});
-            beeperHistory.add(copyBeepers(beepersGrid));
-            beeperInventoryHistory.add(beeperCount);
-        }
-
-
-
-        public void executeCommandList(List<String> commands) {
-            while (!commands.isEmpty()) {
-              String cmd = commands.remove(0);
-
-              if (cmd.startsWith("FORWARD-")) {
-                  int n = Integer.parseInt(cmd.substring(8));
-                  if (n == 1) {
-                      cmd = "FORWARD";  // ✅ Normalize FORWARD-1
-                  } else if (n == 2) {
-                      System.out.println("<FORWARD-2:" + String.join(":", commands) + ", ε, " + this + "> =>>");
-                      commands.add(0, "FORWARD");
-                      commands.add(0, "FORWARD");
-                      continue;  // Skip printing cmd now, handled recursively
-                  } else {
-                      System.out.println("<FORWARD-" + n + ":" + String.join(":", commands) + ", ε, " + this + "> =>>");
-                      commands.add(0, "FORWARD-" + (n - 1));
-                      commands.add(0, "FORWARD");
-                      continue;
-                  }
-              }
-
-
-             if (cmd.equals("FORWARD")) {
-                 System.out.println("<FORWARD:" + String.join(":", commands) + ", ε, " + this + "> =>>");
-                 execute(Instruction.FORWARD);
-             } else {
-                 System.out.println("<" + cmd + ":" + String.join(":", commands) + ", ε, " + this + "> =>>");
-                 execute(parseInstruction(cmd));  // this prints result for pick/put internally
-             }
-            }
-
-            System.out.println("<ε, ε, " + this + "> =>>");
-        }
-
-
-public void execute(Instruction inst, int... params) {
-    int oldX = x, oldY = y, oldDir = direction;
-
-    switch (inst) {
-        case FORWARD:
-            move(1);
-            break;
-        case TLEFT:
-            direction = (direction + 3) % 4;
-            break;
-        case TRIGHT:
-            direction = (direction + 1) % 4;
-            break;
-        case RESET:
-            x = 0; y = 0; direction = 0;
-            beeperCount = 0;
-            break;
-        case SKIP:
-            break;
-        case PUTBEEPER:
-            putBeeper();
-            break;
-        case PICKBEEPER:
-            pickBeeper();
-            break;
-    }
-
-    if (inst == Instruction.FORWARD || inst == Instruction.TLEFT || inst == Instruction.TRIGHT || inst == Instruction.RESET) {
-        recordMovementStep();
-    } else {
-        recordAnyStep();  // ✅ Beeper actions, SKIP, etc.
-    }
-}
-
-
-        private void move(int steps) {
-            switch (direction) {
-                case 0: y += steps; break;
-                case 1: x += steps; break;
-                case 2: y -= steps; break;
-                case 3: x -= steps; break;
-            }
-        }
-
-        private boolean hasPositionChanged() {
-            int[] last = movementHistory.get(movementHistory.size() - 1);
-            return last[0] != x || last[1] != y || last[2] != direction;
-        }
-
-        private boolean[][] copyBeepers(boolean[][] original) {
-            boolean[][] copy = new boolean[10][10];
-            for (int i = 0; i < 10; i++) {
-                System.arraycopy(original[i], 0, copy[i], 0, 10);
-            }
-            return copy;
-        }
-
-        private void putBeeper() {
-            if (beeperCount > 0) {
-                if (!beepersGrid[x][y]) {
-                    beepersGrid[x][y] = true;
-                    beeperCount--;
-                    // ✅ Remove: System.out.println("<PUTBEEPER, (" + x + ", " + y + ")>");
-                } else {
-                    System.out.println("❌ Cannot place beeper: Already exists at (" + x + ", " + y + ")");
-                }
-            } else {
-                System.out.println("❌ Cannot place beeper: No beepers in inventory!");
-            }
-        }
-
-        private Instruction parseInstruction(String cmd) {
-            return switch (cmd) {
-                case "TRIGHT" -> Instruction.TRIGHT;
-                case "TLEFT" -> Instruction.TLEFT;
-                case "RESET" -> Instruction.RESET;
-                case "SKIP" -> Instruction.SKIP;
-                case "PUTBEEPER" -> Instruction.PUTBEEPER;
-                case "PICKBEEPER" -> Instruction.PICKBEEPER;
-                default -> throw new IllegalArgumentException("Unknown cmd: " + cmd);
-            };
-        }
-
-
-        private void pickBeeper() {
-            if (beepersGrid[x][y]) {
-                beepersGrid[x][y] = false;
-                beeperCount++;
-            } else {
-                System.out.println("❌ Cannot pick beeper: No beeper at (" + x + ", " + y + ")");
-            }
-        }
-
-
-        @Override
-        public String toString() {
-            return "((" + x + ", " + y + "), " + (direction * 90) + ")";
-        }
-    }
-#}
-
-  code
-  {#
-      public static class Program {
-          private final Command command;
-
-          public Program(Command command) {
-              this.command = command;
-          }
-
-          public Command getCommand() {
-              return command;
-          }
-      }
-  #}
 
   judgment ⊢ Command: command
   {
-      inference ⊢ Forward[n]: command
-      {
-      }
-      inference ⊢ ForwardDefault: command
-      {
-      }
-      inference ⊢ TurnLeft: command
-      {
-      }
-      inference ⊢ TurnRight: command
-      {
-      }
-      inference ⊢ Reset: command
-      {
-      }
-      inference ⊢ Skip: command
-      {
-      }
-      inference ⊢ PutBeeper: command
-      {
-      }
-      inference ⊢ PickBeeper: command
-      {
-      }
-      inference ⊢ Seq[c1,c2]: command
-      {
-          ⊢ c1: command;
-          ⊢ c2: command;
-      }
+    inference ⊢ Forward: command {}
+    inference ⊢ ForwardN[n]: command {}
+    inference ⊢ TurnLeft: command {}
+    inference ⊢ TurnRight: command {}
+    inference ⊢ Reset: command {}
+    inference ⊢ Skip: command {}
+    inference ⊢ PutBeeper: command {}
+    inference ⊢ PickBeeper: command {}
+    inference ⊢ Seq[c1,c2]: command { ⊢ c1: command; ⊢ c2: command; }
   }
+
   judgment ⊢ Program: program
   {
-      inference ⊢ Prog[c]: program
-      {
-          ⊢ c: command;
+    inference ⊢ Prog[c]: program { ⊢ c: command; }
+  }
+
+  code
+  {#
+    public static class World {
+      public static Set<List<Integer>> beeperMap = new HashSet<>();
+      public static List<int[]> movement = new ArrayList<>();
+      public static List<boolean[][]> beeperGrid = new ArrayList<>();
+      public static List<Integer> beeperInventory = new ArrayList<>();
+      public static int gridWidth = 10;
+      public static int gridHeight = 10;
+    }
+
+    public static void captureStep(int x, int y, int dir, int beeperCount) {
+      World.movement.add(new int[]{x, y, dir});
+      World.beeperInventory.add(beeperCount);
+      boolean[][] grid = new boolean[World.gridWidth][World.gridHeight];
+      for (List<Integer> pos : World.beeperMap) {
+        int bx = pos.get(0), by = pos.get(1);
+        if (bx >= 0 && bx < World.gridWidth && by >= 0 && by < World.gridHeight)
+          grid[bx][by] = true;
       }
+
+      World.beeperGrid.add(grid);
+    }
+  #}
+
+  function N〚Number〛: #Integer#
+  {
+    equation N〚Num[n]〛 = i { i = #Integer.valueOf(n)#; }
   }
 
-  // -----------------------------------------------------------------------
-  // denotational semantics
-  // -----------------------------------------------------------------------
-  function 〚Command〛: #Machine# × #List<Command># → #Machine#
+  function Exec〚Command〛: #List<int[]># → #List<int[]>#
   {
-    equation 〚Forward[n]〛(machine, commands) = machine0
-    {
-        # System.out.println("<FORWARD-" + n + ", " + commands + ", " + machine + "> =>>"); #
-        {# machine.executeForward(Integer.parseInt(n)); #}
-        machine0 = machine;
+    equation Exec〚Forward〛(s0) = s {
+      x: #int# = #s0.getLast()[0]#;
+      y: #int# = #s0.getLast()[1]#;
+      dir: #int# = #s0.getLast()[2]#;
+      beeper: #int# = #s0.getLast()[3]#;
+      # if (dir == 0) y += 1;
+        else if (dir == 90) x += 1;
+        else if (dir == 180) y -= 1;
+        else if (dir == 270) x -= 1;
+        s0.add(new int[]{x, y, dir, beeper});
+        captureStep(x, y, dir, beeper); #
+      s = s0;
     }
-  equation 〚ForwardDefault〛(machine, commands) = machine0
-   {
-       # System.out.println("<FORWARD, " + commands + ", " + machine + "> =>>"); #
-        {# machine.execute(Instruction.FORWARD); #}
-             machine0 = machine;
-   }
-    equation 〚TurnLeft〛(machine, commands) = machine0
-    {
-        # System.out.println("<TLEFT, " + commands + ", " + machine + "> =>>"); #
-        {# machine.execute(Instruction.TLEFT); #}
-        machine0 = machine;
+
+    equation Exec〚ForwardN[n]〛(s0) = s {
+      steps = N〚n〛;
+      x: #int# = #s0.getLast()[0]#;
+      y: #int# = #s0.getLast()[1]#;
+      dir: #int# = #s0.getLast()[2]#;
+      beeper: #int# = #s0.getLast()[3]#;
+      # for (int i = 0; i < steps; i++) {
+          if (dir == 0) y += 1;
+          else if (dir == 90) x += 1;
+          else if (dir == 180) y -= 1;
+          else if (dir == 270) x -= 1;
+          s0.add(new int[]{x, y, dir, beeper});
+          captureStep(x, y, dir, beeper);
+        } #
+      s = s0;
     }
-    equation 〚TurnRight〛(machine, commands) = machine0
-    {
-        # System.out.println("<TRIGHT, " + commands + ", " + machine + "> =>>"); #
-        {# machine.execute(Instruction.TRIGHT); #}
-        machine0 = machine;
+
+    equation Exec〚TurnLeft〛(s0) = s {
+      dir: #int# = #(s0.getLast()[2] + 270) % 360#;
+      x: #int# = #s0.getLast()[0]#;
+      y: #int# = #s0.getLast()[1]#;
+      beeper: #int# = #s0.getLast()[3]#;
+      # s0.add(new int[]{x, y, dir, beeper});
+        captureStep(x, y, dir, beeper); #
+      s = s0;
     }
-    equation 〚PutBeeper〛(machine, commands) = machine0
-    {
-        # System.out.println("<PUTBEEPER, " + commands + ", " + machine + "> =>>"); #
-        {# machine.execute(Instruction.PUTBEEPER); #}  // ✅ Calls Java function to update grid
-        machine0 = machine;
+
+    equation Exec〚TurnRight〛(s0) = s {
+      dir: #int# = #(s0.getLast()[2] + 90) % 360#;
+      x: #int# = #s0.getLast()[0]#;
+      y: #int# = #s0.getLast()[1]#;
+      beeper: #int# = #s0.getLast()[3]#;
+      # s0.add(new int[]{x, y, dir, beeper});
+        captureStep(x, y, dir, beeper); #
+      s = s0;
     }
-    equation 〚PickBeeper〛(machine, commands) = machine0
-    {
-        # System.out.println("<PICKBEEPER, " + commands + ", " + machine + "> =>>"); #
-        {# machine.execute(Instruction.PICKBEEPER); #}  // ✅ Calls Java function to remove from grid
-        machine0 = machine;
-    }
-    equation 〚Seq[c1,c2]〛(machine, commands) = machine0
-    {
-        machine1 = 〚c1〛(machine, commands);
-        machine0 = 〚c2〛(machine1, commands);
-    }
-        equation 〚Reset〛(machine, commands) = machine0
-        {
-            # System.out.println("<RESET:" + commands + ", " + machine + "> =>>"); #
-            {# machine.execute(Instruction.RESET); #}
-            machine0 = machine;
+
+    equation Exec〚PickBeeper〛(s0) = s {
+      x: #int# = #s0.getLast()[0]#;
+      y: #int# = #s0.getLast()[1]#;
+      dir: #int# = #s0.getLast()[2]#;
+      beeperCount: #int# = #s0.getLast()[3]#;
+      # List<Integer> pos = Arrays.asList(x, y);
+        if (World.beeperMap.contains(pos)) {
+          World.beeperMap.remove(pos);
+          beeperCount += 1;
         }
-        equation 〚Skip〛(machine, commands) = machine0
-        {
-            # System.out.println("<SKIP:" + commands + ", " + machine + "> =>>"); #
-            {# machine.execute(Instruction.SKIP); #}
-            machine0 = machine;
+        s0.add(new int[]{x, y, dir, beeperCount});
+        captureStep(x, y, dir, beeperCount); #
+      s = s0;
+    }
+
+    equation Exec〚PutBeeper〛(s0) = s {
+      x: #int# = #s0.getLast()[0]#;
+      y: #int# = #s0.getLast()[1]#;
+      dir: #int# = #s0.getLast()[2]#;
+      beeperCount: #int# = #s0.getLast()[3]#;
+      # if (beeperCount > 0) {
+          beeperCount -= 1;
+          World.beeperMap.add(Arrays.asList(x, y));
         }
+        s0.add(new int[]{x, y, dir, beeperCount});
+        captureStep(x, y, dir, beeperCount); #
+      s = s0;
+    }
+
+    equation Exec〚Reset〛(s0) = s {
+      # s0.clear(); s0.add(new int[]{0, 0, 0, 0});
+        captureStep(0, 0, 0, 0); #
+      s = s0;
+    }
+
+    equation Exec〚Skip〛(s0) = s {
+      x: #int# = #s0.getLast()[0]#;
+      y: #int# = #s0.getLast()[1]#;
+      dir: #int# = #s0.getLast()[2]#;
+      beeperCount: #int# = #s0.getLast()[3]#;
+      # captureStep(x, y, dir, beeperCount); #
+      s = s0;
+    }
+
+    equation Exec〚Seq[c1,c2]〛(s) = s2 {
+      s1 = Exec〚c1〛(s);
+      s2 = Exec〚c2〛(s1);
+    }
   }
 
-  function 〚Program〛: #Machine# → #Machine#
+  function Exec〚Program〛: #Void#
   {
-    equation 〚Prog[c]〛(machine) = machine0
-    {
-        {#
-           List<String> cmdList = Arrays.asList(c.toString().split(":"));
-           machine.executeCommandList(new ArrayList<>(cmdList));
-        #}
-        machine0 = machine;
+    equation Exec〚Prog[c]〛 = none {
+      s0: #List<int[]># = # new ArrayList<>(); #;
+      # try {
+          File currentDir = new File(".");
+          File[] jsonFiles = currentDir.listFiles((dir, name) -> name.endsWith(".json"));
+          if (jsonFiles == null || jsonFiles.length == 0) {
+              System.out.println("Error: No .json file found in current directory.");
+              return null;
+          }
+          if (jsonFiles.length > 1) {
+              System.out.println("Error: Multiple .json files found. Please keep only one.");
+              return null;
+          }
+
+          FileReader reader = new FileReader(jsonFiles[0]);
+          StringBuilder sb = new StringBuilder();
+          int ch;
+          while ((ch = reader.read()) != -1) sb.append((char) ch);
+          reader.close();
+
+          JSONObject json = new JSONObject(sb.toString());
+
+           if (json.has("grid")) {
+            JSONObject grid = json.getJSONObject("grid");
+            if (grid.has("width")) {
+              World.gridWidth = grid.getInt("width");
+            }
+            if (grid.has("height")) {
+              World.gridHeight = grid.getInt("height");
+            }
+          }
+
+          JSONObject robot = json.getJSONObject("robot");
+          int startX = robot.getInt("x");
+          int startY = robot.getInt("y");
+          int startDir = robot.getInt("dir");
+          int startBeepers = robot.getInt("beeperCount");
+
+          JSONArray beepersArr = json.getJSONArray("beepers");
+          for (int i = 0; i < beepersArr.length(); i++) {
+            JSONObject b = beepersArr.getJSONObject(i);
+            int bx = b.getInt("x");
+            int by = b.getInt("y");
+            World.beeperMap.add(Arrays.asList(bx, by));
+          }
+
+          s0.add(new int[]{startX, startY, startDir, startBeepers});
+          captureStep(startX, startY, startDir, startBeepers);
+        } catch (Exception e) {
+          System.out.println("Error reading JSON: " + e.getMessage());
+          s0.add(new int[]{0, 0, 0, 0});
+          captureStep(0, 0, 0, 0);
+        }
+
+      System.out.println("Exec"); #
+      s = Exec〚c〛(s0);
+      none = # null #;
     }
+    after {#
+      // Print parsed input
+      System.out.println("Input passed to parser:");
+      Scanner inputScanner = new Scanner(System.in);
+      while (inputScanner.hasNextLine()) {
+        String line = inputScanner.nextLine();
+        System.out.println(line);
+      }
+
+      // Print parsed program
+      System.out.println("\nParsed program:");
+      String parsed = c.toString(); // 'c' is from Prog[c]
+      System.out.println(parsed);
+
+      List<String> actions = new ArrayList<>(Arrays.asList(parsed.split(":")));
+      StringBuilder queue = new StringBuilder(parsed);
+      int x = 0, y = 0, dir = 0;
+
+      for (int i = 0; i < actions.size(); i++) {
+        String action = actions.get(i);
+
+        // Don't print by default if it's FORWARD-n, it prints manually
+        if (!action.startsWith("FORWARD-")) {
+          System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", queue, x, y, dir);
+        }
+
+        if (action.equals("FORWARD")) {
+          if (dir == 0) y += 1;
+          else if (dir == 90) x += 1;
+          else if (dir == 180) y -= 1;
+          else if (dir == 270) x -= 1;
+
+          if (x < 0 || x >= World.gridWidth || y < 0 || y >= World.gridHeight) {
+              System.out.printf("Error: Karel moved outside the grid at (%d, %d)%n", x, y);
+              return null;
+          }
+        }
+        else if (action.equals("TRIGHT")) {
+          dir = (dir + 90) % 360;
+        }
+        else if (action.equals("TLEFT")) {
+          dir = (dir + 270) % 360;
+        }
+        else if (action.startsWith("FORWARD-")) {
+          // Manual derivation print for FORWARD-n
+          System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", queue, x, y, dir);
+
+          int step = Integer.parseInt(action.split("-")[1]);
+          StringBuilder replacement;
+          if (step == 2) {
+            replacement = new StringBuilder("FORWARD:FORWARD");
+          } else {
+            replacement = new StringBuilder("FORWARD:FORWARD-" + (step - 1));
+          }
+
+          queue = new StringBuilder(queue.toString().replaceFirst("FORWARD-" + step, replacement.toString()));
+
+          // Replace in list
+          actions.remove(i);
+          actions.add(i, "FORWARD");
+          if (step == 2) {
+            actions.add(i + 1, "FORWARD");
+          } else {
+            actions.add(i + 1, "FORWARD-" + (step - 1));
+          }
+          // Re-process first inserted FORWARD
+          i--;
+          continue;
+        }
+
+        // Remove action from queue
+        int idx = queue.indexOf(action);
+        if (idx == 0) {
+          queue.delete(0, action.length());
+          if (queue.length() > 0 && queue.charAt(0) == ':') queue.deleteCharAt(0);
+        }
+      }
+
+      // Final derivation step
+      System.out.printf("<ε, ((%d, %d), %d)>>%n", x, y, dir);
+      System.out.println("Final Machine State:");
+      System.out.printf("((%d, %d), %d)%n", x, y, dir);
+
+      lang.karel.KarelVisualizer.createAndShowGUI(
+        new lang.karel.KarelVisualizer(
+          World.movement,
+          World.beeperGrid,
+          World.beeperInventory,
+          World.gridWidth,
+          World.gridHeight
+        )
+      );
+    #}
   }
 }
-
-// -------------------------------------------------------------------------
-// end of file
-// -------------------------------------------------------------------------

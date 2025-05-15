@@ -3,7 +3,11 @@
 
 package lang.karel;
 import java.util.*;
+import java.io.*;
+import org.json.*;
+import javax.swing.*;
 import static lang.karel.Karel.*;
+import lang.karel.KarelVisualizer;
     
 
 
@@ -18,6 +22,18 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  */
 @SuppressWarnings("CheckReturnValue")
 public class KarelBaseListener implements KarelListener {
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterDNumber(KarelParser.DNumberContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDNumber(KarelParser.DNumberContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
