@@ -3,7 +3,11 @@
 
 package lang.karel;
 import java.util.*;
+import java.io.*;
+import org.json.*;
+import javax.swing.*;
 import static lang.karel.Karel.*;
+import lang.karel.KarelVisualizer;
     
 
 import org.antlr.v4.runtime.atn.*;
@@ -23,28 +27,29 @@ public class KarelParser extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, T__6=7, T__7=8, NUM=9, 
-		ID=10, STR=11, WHITESPACE=12, LINECOMMENT=13, COMMENT=14, ERROR=15;
+		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, T__6=7, T__7=8, T__8=9, 
+		NUM=10, ID=11, STR=12, WHITESPACE=13, LINECOMMENT=14, COMMENT=15, ERROR=16;
 	public static final int
-		RULE_dCommand = 0, RULE_dProgram = 1, RULE_dNUM = 2, RULE_dID = 3, RULE_dSTR = 4;
+		RULE_dNumber = 0, RULE_dCommand = 1, RULE_dProgram = 2, RULE_dNUM = 3, 
+		RULE_dID = 4, RULE_dSTR = 5;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"dCommand", "dProgram", "dNUM", "dID", "dSTR"
+			"dNumber", "dCommand", "dProgram", "dNUM", "dID", "dSTR"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'forward'", "'turn left'", "'turn right'", "'reset'", "'skip'", 
-			"'putbeeper'", "'pickbeeper'", "';'"
+			null, "'forward'", "'turn'", "'left'", "'right'", "'pickbeeper'", "'putbeeper'", 
+			"'reset'", "'skip'", "';'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, null, null, null, null, null, null, null, null, "NUM", "ID", "STR", 
-			"WHITESPACE", "LINECOMMENT", "COMMENT", "ERROR"
+			null, null, null, null, null, null, null, null, null, null, "NUM", "ID", 
+			"STR", "WHITESPACE", "LINECOMMENT", "COMMENT", "ERROR"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -99,13 +104,56 @@ public class KarelParser extends Parser {
 	}
 
 	@SuppressWarnings("CheckReturnValue")
+	public static class DNumberContext extends ParserRuleContext {
+		public Number _result;
+		public DNUMContext n;
+		public DNUMContext dNUM() {
+			return getRuleContext(DNUMContext.class,0);
+		}
+		public DNumberContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_dNumber; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof KarelListener ) ((KarelListener)listener).enterDNumber(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof KarelListener ) ((KarelListener)listener).exitDNumber(this);
+		}
+	}
+
+	public final DNumberContext dNumber() throws RecognitionException {
+		DNumberContext _localctx = new DNumberContext(_ctx, getState());
+		enterRule(_localctx, 0, RULE_dNumber);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(12);
+			((DNumberContext)_localctx).n = dNUM();
+			 ((DNumberContext)_localctx)._result =  new Number.Num(((DNumberContext)_localctx).n._result); 
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	@SuppressWarnings("CheckReturnValue")
 	public static class DCommandContext extends ParserRuleContext {
 		public Command _result;
 		public DCommandContext c1;
-		public DNUMContext n;
+		public DNumberContext n;
 		public DCommandContext c2;
-		public DNUMContext dNUM() {
-			return getRuleContext(DNUMContext.class,0);
+		public DNumberContext dNumber() {
+			return getRuleContext(DNumberContext.class,0);
 		}
 		public List<DCommandContext> dCommand() {
 			return getRuleContexts(DCommandContext.class);
@@ -136,76 +184,80 @@ public class KarelParser extends Parser {
 		int _parentState = getState();
 		DCommandContext _localctx = new DCommandContext(_ctx, _parentState);
 		DCommandContext _prevctx = _localctx;
-		int _startState = 0;
-		enterRecursionRule(_localctx, 0, RULE_dCommand, _p);
+		int _startState = 2;
+		enterRecursionRule(_localctx, 2, RULE_dCommand, _p);
 		try {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(29);
+			setState(36);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,0,_ctx) ) {
 			case 1:
 				{
-				setState(11);
+				setState(16);
 				match(T__0);
-				setState(12);
-				((DCommandContext)_localctx).n = dNUM();
-				 ((DCommandContext)_localctx)._result =  new Command.Forward(((DCommandContext)_localctx).n._result); 
+				 ((DCommandContext)_localctx)._result =  new Command.Forward(); 
 				}
 				break;
 			case 2:
 				{
-				setState(15);
+				setState(18);
 				match(T__0);
-				 ((DCommandContext)_localctx)._result =  new Command.ForwardDefault(); 
+				setState(19);
+				((DCommandContext)_localctx).n = dNumber();
+				 ((DCommandContext)_localctx)._result =  new Command.ForwardN(((DCommandContext)_localctx).n._result); 
 				}
 				break;
 			case 3:
 				{
-				setState(17);
+				setState(22);
 				match(T__1);
+				setState(23);
+				match(T__2);
 				 ((DCommandContext)_localctx)._result =  new Command.TurnLeft(); 
 				}
 				break;
 			case 4:
 				{
-				setState(19);
-				match(T__2);
+				setState(25);
+				match(T__1);
+				setState(26);
+				match(T__3);
 				 ((DCommandContext)_localctx)._result =  new Command.TurnRight(); 
 				}
 				break;
 			case 5:
 				{
-				setState(21);
-				match(T__3);
-				 ((DCommandContext)_localctx)._result =  new Command.Reset(); 
+				setState(28);
+				match(T__4);
+				 ((DCommandContext)_localctx)._result =  new Command.PickBeeper(); 
 				}
 				break;
 			case 6:
 				{
-				setState(23);
-				match(T__4);
-				 ((DCommandContext)_localctx)._result =  new Command.Skip(); 
-				}
-				break;
-			case 7:
-				{
-				setState(25);
+				setState(30);
 				match(T__5);
 				 ((DCommandContext)_localctx)._result =  new Command.PutBeeper(); 
 				}
 				break;
+			case 7:
+				{
+				setState(32);
+				match(T__6);
+				 ((DCommandContext)_localctx)._result =  new Command.Reset(); 
+				}
+				break;
 			case 8:
 				{
-				setState(27);
-				match(T__6);
-				 ((DCommandContext)_localctx)._result =  new Command.PickBeeper(); 
+				setState(34);
+				match(T__7);
+				 ((DCommandContext)_localctx)._result =  new Command.Skip(); 
 				}
 				break;
 			}
 			_ctx.stop = _input.LT(-1);
-			setState(38);
+			setState(45);
 			_errHandler.sync(this);
 			_alt = getInterpreter().adaptivePredict(_input,1,_ctx);
 			while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER ) {
@@ -217,17 +269,17 @@ public class KarelParser extends Parser {
 					_localctx = new DCommandContext(_parentctx, _parentState);
 					_localctx.c1 = _prevctx;
 					pushNewRecursionContext(_localctx, _startState, RULE_dCommand);
-					setState(31);
+					setState(38);
 					if (!(precpred(_ctx, 1))) throw new FailedPredicateException(this, "precpred(_ctx, 1)");
-					setState(32);
-					match(T__7);
-					setState(33);
+					setState(39);
+					match(T__8);
+					setState(40);
 					((DCommandContext)_localctx).c2 = dCommand(2);
 					 ((DCommandContext)_localctx)._result =  new Command.Seq(((DCommandContext)_localctx).c1._result, ((DCommandContext)_localctx).c2._result); 
 					}
 					} 
 				}
-				setState(40);
+				setState(47);
 				_errHandler.sync(this);
 				_alt = getInterpreter().adaptivePredict(_input,1,_ctx);
 			}
@@ -272,43 +324,43 @@ public class KarelParser extends Parser {
 
 	public final DProgramContext dProgram() throws RecognitionException {
 		DProgramContext _localctx = new DProgramContext(_ctx, getState());
-		enterRule(_localctx, 2, RULE_dProgram);
+		enterRule(_localctx, 4, RULE_dProgram);
 		int _la;
 		try {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(41);
+			setState(48);
 			((DProgramContext)_localctx).c = dCommand(0);
-			setState(46);
+			setState(53);
 			_errHandler.sync(this);
 			_alt = getInterpreter().adaptivePredict(_input,2,_ctx);
 			while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER ) {
 				if ( _alt==1 ) {
 					{
 					{
-					setState(42);
-					match(T__7);
-					setState(43);
+					setState(49);
+					match(T__8);
+					setState(50);
 					((DProgramContext)_localctx).c2 = dCommand(0);
 					}
 					} 
 				}
-				setState(48);
+				setState(55);
 				_errHandler.sync(this);
 				_alt = getInterpreter().adaptivePredict(_input,2,_ctx);
 			}
-			setState(50);
+			setState(57);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==T__7) {
+			if (_la==T__8) {
 				{
-				setState(49);
-				match(T__7);
+				setState(56);
+				match(T__8);
 				}
 			}
 
-			setState(52);
+			setState(59);
 			match(EOF);
 			 ((DProgramContext)_localctx)._result =  new Program.Prog(((DProgramContext)_localctx).c._result); 
 			}
@@ -345,11 +397,11 @@ public class KarelParser extends Parser {
 
 	public final DNUMContext dNUM() throws RecognitionException {
 		DNUMContext _localctx = new DNUMContext(_ctx, getState());
-		enterRule(_localctx, 4, RULE_dNUM);
+		enterRule(_localctx, 6, RULE_dNUM);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(55);
+			setState(62);
 			((DNUMContext)_localctx).n = match(NUM);
 			 ((DNUMContext)_localctx)._result =  (((DNUMContext)_localctx).n!=null?((DNUMContext)_localctx).n.getText():null); 
 			}
@@ -386,11 +438,11 @@ public class KarelParser extends Parser {
 
 	public final DIDContext dID() throws RecognitionException {
 		DIDContext _localctx = new DIDContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_dID);
+		enterRule(_localctx, 8, RULE_dID);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(58);
+			setState(65);
 			((DIDContext)_localctx).i = match(ID);
 			 ((DIDContext)_localctx)._result =  (((DIDContext)_localctx).i!=null?((DIDContext)_localctx).i.getText():null); 
 			}
@@ -427,11 +479,11 @@ public class KarelParser extends Parser {
 
 	public final DSTRContext dSTR() throws RecognitionException {
 		DSTRContext _localctx = new DSTRContext(_ctx, getState());
-		enterRule(_localctx, 8, RULE_dSTR);
+		enterRule(_localctx, 10, RULE_dSTR);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(61);
+			setState(68);
 			((DSTRContext)_localctx).s = match(STR);
 			 ((DSTRContext)_localctx)._result =  (((DSTRContext)_localctx).s!=null?((DSTRContext)_localctx).s.getText():null); 
 			}
@@ -449,7 +501,7 @@ public class KarelParser extends Parser {
 
 	public boolean sempred(RuleContext _localctx, int ruleIndex, int predIndex) {
 		switch (ruleIndex) {
-		case 0:
+		case 1:
 			return dCommand_sempred((DCommandContext)_localctx, predIndex);
 		}
 		return true;
@@ -463,48 +515,51 @@ public class KarelParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u000fA\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
-		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0001"+
-		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
-		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
-		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
-		"\u0000\u0003\u0000\u001e\b\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
-		"\u0000\u0001\u0000\u0005\u0000%\b\u0000\n\u0000\f\u0000(\t\u0000\u0001"+
-		"\u0001\u0001\u0001\u0001\u0001\u0005\u0001-\b\u0001\n\u0001\f\u00010\t"+
-		"\u0001\u0001\u0001\u0003\u00013\b\u0001\u0001\u0001\u0001\u0001\u0001"+
-		"\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0003\u0001\u0003\u0001"+
-		"\u0003\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0000\u0001\u0000"+
-		"\u0005\u0000\u0002\u0004\u0006\b\u0000\u0000E\u0000\u001d\u0001\u0000"+
-		"\u0000\u0000\u0002)\u0001\u0000\u0000\u0000\u00047\u0001\u0000\u0000\u0000"+
-		"\u0006:\u0001\u0000\u0000\u0000\b=\u0001\u0000\u0000\u0000\n\u000b\u0006"+
-		"\u0000\uffff\uffff\u0000\u000b\f\u0005\u0001\u0000\u0000\f\r\u0003\u0004"+
-		"\u0002\u0000\r\u000e\u0006\u0000\uffff\uffff\u0000\u000e\u001e\u0001\u0000"+
-		"\u0000\u0000\u000f\u0010\u0005\u0001\u0000\u0000\u0010\u001e\u0006\u0000"+
-		"\uffff\uffff\u0000\u0011\u0012\u0005\u0002\u0000\u0000\u0012\u001e\u0006"+
-		"\u0000\uffff\uffff\u0000\u0013\u0014\u0005\u0003\u0000\u0000\u0014\u001e"+
-		"\u0006\u0000\uffff\uffff\u0000\u0015\u0016\u0005\u0004\u0000\u0000\u0016"+
-		"\u001e\u0006\u0000\uffff\uffff\u0000\u0017\u0018\u0005\u0005\u0000\u0000"+
-		"\u0018\u001e\u0006\u0000\uffff\uffff\u0000\u0019\u001a\u0005\u0006\u0000"+
-		"\u0000\u001a\u001e\u0006\u0000\uffff\uffff\u0000\u001b\u001c\u0005\u0007"+
-		"\u0000\u0000\u001c\u001e\u0006\u0000\uffff\uffff\u0000\u001d\n\u0001\u0000"+
-		"\u0000\u0000\u001d\u000f\u0001\u0000\u0000\u0000\u001d\u0011\u0001\u0000"+
-		"\u0000\u0000\u001d\u0013\u0001\u0000\u0000\u0000\u001d\u0015\u0001\u0000"+
-		"\u0000\u0000\u001d\u0017\u0001\u0000\u0000\u0000\u001d\u0019\u0001\u0000"+
-		"\u0000\u0000\u001d\u001b\u0001\u0000\u0000\u0000\u001e&\u0001\u0000\u0000"+
-		"\u0000\u001f \n\u0001\u0000\u0000 !\u0005\b\u0000\u0000!\"\u0003\u0000"+
-		"\u0000\u0002\"#\u0006\u0000\uffff\uffff\u0000#%\u0001\u0000\u0000\u0000"+
-		"$\u001f\u0001\u0000\u0000\u0000%(\u0001\u0000\u0000\u0000&$\u0001\u0000"+
-		"\u0000\u0000&\'\u0001\u0000\u0000\u0000\'\u0001\u0001\u0000\u0000\u0000"+
-		"(&\u0001\u0000\u0000\u0000).\u0003\u0000\u0000\u0000*+\u0005\b\u0000\u0000"+
-		"+-\u0003\u0000\u0000\u0000,*\u0001\u0000\u0000\u0000-0\u0001\u0000\u0000"+
-		"\u0000.,\u0001\u0000\u0000\u0000./\u0001\u0000\u0000\u0000/2\u0001\u0000"+
-		"\u0000\u00000.\u0001\u0000\u0000\u000013\u0005\b\u0000\u000021\u0001\u0000"+
-		"\u0000\u000023\u0001\u0000\u0000\u000034\u0001\u0000\u0000\u000045\u0005"+
-		"\u0000\u0000\u000156\u0006\u0001\uffff\uffff\u00006\u0003\u0001\u0000"+
-		"\u0000\u000078\u0005\t\u0000\u000089\u0006\u0002\uffff\uffff\u00009\u0005"+
-		"\u0001\u0000\u0000\u0000:;\u0005\n\u0000\u0000;<\u0006\u0003\uffff\uffff"+
-		"\u0000<\u0007\u0001\u0000\u0000\u0000=>\u0005\u000b\u0000\u0000>?\u0006"+
-		"\u0004\uffff\uffff\u0000?\t\u0001\u0000\u0000\u0000\u0004\u001d&.2";
+		"\u0004\u0001\u0010H\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
+		"\u0005\u0007\u0005\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001"+
+		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
+		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
+		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
+		"\u0001\u0001\u0001\u0003\u0001%\b\u0001\u0001\u0001\u0001\u0001\u0001"+
+		"\u0001\u0001\u0001\u0001\u0001\u0005\u0001,\b\u0001\n\u0001\f\u0001/\t"+
+		"\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0005\u00024\b\u0002\n\u0002"+
+		"\f\u00027\t\u0002\u0001\u0002\u0003\u0002:\b\u0002\u0001\u0002\u0001\u0002"+
+		"\u0001\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0004\u0001\u0004"+
+		"\u0001\u0004\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0000\u0001"+
+		"\u0002\u0006\u0000\u0002\u0004\u0006\b\n\u0000\u0000K\u0000\f\u0001\u0000"+
+		"\u0000\u0000\u0002$\u0001\u0000\u0000\u0000\u00040\u0001\u0000\u0000\u0000"+
+		"\u0006>\u0001\u0000\u0000\u0000\bA\u0001\u0000\u0000\u0000\nD\u0001\u0000"+
+		"\u0000\u0000\f\r\u0003\u0006\u0003\u0000\r\u000e\u0006\u0000\uffff\uffff"+
+		"\u0000\u000e\u0001\u0001\u0000\u0000\u0000\u000f\u0010\u0006\u0001\uffff"+
+		"\uffff\u0000\u0010\u0011\u0005\u0001\u0000\u0000\u0011%\u0006\u0001\uffff"+
+		"\uffff\u0000\u0012\u0013\u0005\u0001\u0000\u0000\u0013\u0014\u0003\u0000"+
+		"\u0000\u0000\u0014\u0015\u0006\u0001\uffff\uffff\u0000\u0015%\u0001\u0000"+
+		"\u0000\u0000\u0016\u0017\u0005\u0002\u0000\u0000\u0017\u0018\u0005\u0003"+
+		"\u0000\u0000\u0018%\u0006\u0001\uffff\uffff\u0000\u0019\u001a\u0005\u0002"+
+		"\u0000\u0000\u001a\u001b\u0005\u0004\u0000\u0000\u001b%\u0006\u0001\uffff"+
+		"\uffff\u0000\u001c\u001d\u0005\u0005\u0000\u0000\u001d%\u0006\u0001\uffff"+
+		"\uffff\u0000\u001e\u001f\u0005\u0006\u0000\u0000\u001f%\u0006\u0001\uffff"+
+		"\uffff\u0000 !\u0005\u0007\u0000\u0000!%\u0006\u0001\uffff\uffff\u0000"+
+		"\"#\u0005\b\u0000\u0000#%\u0006\u0001\uffff\uffff\u0000$\u000f\u0001\u0000"+
+		"\u0000\u0000$\u0012\u0001\u0000\u0000\u0000$\u0016\u0001\u0000\u0000\u0000"+
+		"$\u0019\u0001\u0000\u0000\u0000$\u001c\u0001\u0000\u0000\u0000$\u001e"+
+		"\u0001\u0000\u0000\u0000$ \u0001\u0000\u0000\u0000$\"\u0001\u0000\u0000"+
+		"\u0000%-\u0001\u0000\u0000\u0000&\'\n\u0001\u0000\u0000\'(\u0005\t\u0000"+
+		"\u0000()\u0003\u0002\u0001\u0002)*\u0006\u0001\uffff\uffff\u0000*,\u0001"+
+		"\u0000\u0000\u0000+&\u0001\u0000\u0000\u0000,/\u0001\u0000\u0000\u0000"+
+		"-+\u0001\u0000\u0000\u0000-.\u0001\u0000\u0000\u0000.\u0003\u0001\u0000"+
+		"\u0000\u0000/-\u0001\u0000\u0000\u000005\u0003\u0002\u0001\u000012\u0005"+
+		"\t\u0000\u000024\u0003\u0002\u0001\u000031\u0001\u0000\u0000\u000047\u0001"+
+		"\u0000\u0000\u000053\u0001\u0000\u0000\u000056\u0001\u0000\u0000\u0000"+
+		"69\u0001\u0000\u0000\u000075\u0001\u0000\u0000\u00008:\u0005\t\u0000\u0000"+
+		"98\u0001\u0000\u0000\u00009:\u0001\u0000\u0000\u0000:;\u0001\u0000\u0000"+
+		"\u0000;<\u0005\u0000\u0000\u0001<=\u0006\u0002\uffff\uffff\u0000=\u0005"+
+		"\u0001\u0000\u0000\u0000>?\u0005\n\u0000\u0000?@\u0006\u0003\uffff\uffff"+
+		"\u0000@\u0007\u0001\u0000\u0000\u0000AB\u0005\u000b\u0000\u0000BC\u0006"+
+		"\u0004\uffff\uffff\u0000C\t\u0001\u0000\u0000\u0000DE\u0005\f\u0000\u0000"+
+		"EF\u0006\u0005\uffff\uffff\u0000F\u000b\u0001\u0000\u0000\u0000\u0004"+
+		"$-59";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

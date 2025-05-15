@@ -1,7 +1,11 @@
 
 package lang.karel;
 import java.util.*;
+import java.io.*;
+import org.json.*;
+import javax.swing.*;
 import static lang.karel.Karel.*;
+import lang.karel.KarelVisualizer;
     
 public final class Command_command
 {
@@ -21,13 +25,13 @@ public final class Command_command
   {
     switch (_phrase)
     {
-      case Command.Forward(var n) ->
+      case Command.Forward() ->
       {
         return (_Operation)() -> 
         {
         };
       }
-      case Command.ForwardDefault() ->
+      case Command.ForwardN(var n) ->
       {
         return (_Operation)() -> 
         {
