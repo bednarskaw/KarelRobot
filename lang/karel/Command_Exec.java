@@ -173,6 +173,34 @@ public final class Command_Exec
           return s2;
         };
       }
+      case Command.IfElse(var b, var c1, var c2) ->
+      {
+        var _1 = Condition_Check.operation(b);
+        return (_Operation)(var s0) -> 
+        {
+          List<int[]> s;
+          boolean cond = _1.apply(s0);
+          s =  cond ? Command_Exec.operation(c1).apply(s0)
+                 : Command_Exec.operation(c2).apply(s0); ;
+          return s;
+        };
+      }
+      case Command.While(var b, var c) ->
+      {
+        return (_Operation)(var s0) -> 
+        {
+          List<int[]> s;
+          
+        var _cond = Condition_Check.operation(b);
+        var _body = Command_Exec.operation(c);
+        while (_cond.apply(s0)) {
+          s0 = _body.apply(s0);
+        }
+      
+          s = s0;
+          return s;
+        };
+      }
     }
   }
 }

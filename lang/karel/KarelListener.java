@@ -28,6 +28,16 @@ public interface KarelListener extends ParseTreeListener {
 	 */
 	void exitDNumber(KarelParser.DNumberContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link KarelParser#dCondition}.
+	 * @param ctx the parse tree
+	 */
+	void enterDCondition(KarelParser.DConditionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link KarelParser#dCondition}.
+	 * @param ctx the parse tree
+	 */
+	void exitDCondition(KarelParser.DConditionContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link KarelParser#dCommand}.
 	 * @param ctx the parse tree
 	 */
