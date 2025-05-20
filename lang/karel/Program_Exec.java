@@ -61,7 +61,18 @@ public final class Program_Exec
               World.gridHeight = grid.getInt("height");
             }
           }
-
+          if (json.has("walls")) {
+            JSONArray wallArr = json.getJSONArray("walls");
+            for (int i = 0; i < wallArr.length(); i++) {
+              JSONObject w = wallArr.getJSONObject(i);
+              int x1 = w.getInt("x");
+              int y1 = w.getInt("y");
+              int x2 = w.getInt("x'");
+              int y2 = w.getInt("y'");
+              World.walls.add(Arrays.asList(x1, y1, x2, y2));
+              World.walls.add(Arrays.asList(x2, y2, x1, y1));
+            }
+          }
           JSONObject robot = json.getJSONObject("robot");
           int startX = robot.getInt("x");
           int startY = robot.getInt("y");
@@ -88,7 +99,6 @@ public final class Program_Exec
           List<int[]> s = _1.apply(s0);
           none =  null ;
           
-      // Print parsed input
       System.out.println("Input passed to parser:");
       Scanner inputScanner = new Scanner(System.in);
       while (inputScanner.hasNextLine()) {
@@ -96,55 +106,30 @@ public final class Program_Exec
         System.out.println(line);
       }
 
-      // Print parsed program
       System.out.println("\nParsed program:");
-      String parsed = c.toString(); // 'c' is from Prog[c]
+      String parsed = c.toString();
       System.out.println(parsed);
 
+      System.out.println("\nDerived from execution:");
       List<String> actions = new ArrayList<>(Arrays.asList(parsed.split(":")));
       StringBuilder queue = new StringBuilder(parsed);
       int x = 0, y = 0, dir = 0;
 
       for (int i = 0; i < actions.size(); i++) {
-        String action = actions.get(i);
+        String current = actions.get(i);
 
-        // Don't print by default if it's FORWARD-n, it prints manually
-        if (!action.startsWith("FORWARD-")) {
-          System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", queue, x, y, dir);
-        }
-
-        if (action.equals("FORWARD")) {
-          if (dir == 0) y += 1;
-          else if (dir == 90) x += 1;
-          else if (dir == 180) y -= 1;
-          else if (dir == 270) x -= 1;
-
-          if (x < 0 || x >= World.gridWidth || y < 0 || y >= World.gridHeight) {
-              System.out.printf("Error: Karel moved outside the grid at (%d, %d)%n", x, y);
-              return null;
-          }
-        }
-        else if (action.equals("TRIGHT")) {
-          dir = (dir + 90) % 360;
-        }
-        else if (action.equals("TLEFT")) {
-          dir = (dir + 270) % 360;
-        }
-        else if (action.startsWith("FORWARD-")) {
-          // Manual derivation print for FORWARD-n
+        // 🔁 Obsługa FORWARD-n
+        if (current.startsWith("FORWARD-")) {
+          // 1. Wypisz stan z nierozwiniętym makrem
           System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", queue, x, y, dir);
 
-          int step = Integer.parseInt(action.split("-")[1]);
-          StringBuilder replacement;
-          if (step == 2) {
-            replacement = new StringBuilder("FORWARD:FORWARD");
-          } else {
-            replacement = new StringBuilder("FORWARD:FORWARD-" + (step - 1));
-          }
+          // 2. Rozwiń makro
+          int step = Integer.parseInt(current.split("-")[1]);
+          StringBuilder replacement = (step == 2)
+              ? new StringBuilder("FORWARD:FORWARD")
+              : new StringBuilder("FORWARD:FORWARD-" + (step - 1));
 
           queue = new StringBuilder(queue.toString().replaceFirst("FORWARD-" + step, replacement.toString()));
-
-          // Replace in list
           actions.remove(i);
           actions.add(i, "FORWARD");
           if (step == 2) {
@@ -152,21 +137,82 @@ public final class Program_Exec
           } else {
             actions.add(i + 1, "FORWARD-" + (step - 1));
           }
-          // Re-process first inserted FORWARD
-          i--;
+
+          i--; // przetwarzamy rozwinięty krok od nowa
           continue;
         }
 
-        // Remove action from queue
-        int idx = queue.indexOf(action);
+
+        // 🖨️ Wyświetl konfigurację przed wykonaniem
+        System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", queue, x, y, dir);
+
+        // 🔀 Obsługa BRANCH po warunku
+        if (i + 1 < actions.size() && actions.get(i + 1).startsWith("BRANCH(")) {
+          String cond = current;
+          String branch = actions.get(i + 1);
+          boolean result = false;
+
+          switch (cond) {
+            case "FRONT-IS-CLEAR": result = canMove(x, y, dir); break;
+            case "FRONT-IS-BLOCKED": result = !canMove(x, y, dir); break;
+            case "LEFT-IS-CLEAR": result = canMove(x, y, (dir + 270) % 360); break;
+            case "LEFT-IS-BLOCKED": result = !canMove(x, y, (dir + 270) % 360); break;
+            case "RIGHT-IS-CLEAR": result = canMove(x, y, (dir + 90) % 360); break;
+            case "RIGHT-IS-BLOCKED": result = !canMove(x, y, (dir + 90) % 360); break;
+            case "BACK-IS-CLEAR": result = canMove(x, y, (dir + 180) % 360); break;
+            case "BACK-IS-BLOCKED": result = !canMove(x, y, (dir + 180) % 360); break;
+          }
+
+          String content = branch.substring("BRANCH(".length(), branch.length() - 1);
+          String[] parts = content.split(",", 2);
+          String chosen = result ? parts[0].trim() : parts[1].trim();
+
+          // 🖨️ Rozwinięcie BRANCH
+          System.out.printf("<%s, %s, ((%d, %d), %d)>>%n", branch, cond, x, y, dir);
+          System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", chosen, x, y, dir);
+
+          // 🧭 Ruch w zależności od wyboru
+          if (chosen.equals("FORWARD")) {
+            if (dir == 0) y += 1;
+            else if (dir == 90) x += 1;
+            else if (dir == 180) y -= 1;
+            else if (dir == 270) x -= 1;
+          } else if (chosen.equals("TLEFT")) {
+            dir = (dir + 270) % 360;
+          } else if (chosen.equals("TRIGHT")) {
+            dir = (dir + 90) % 360;
+          }
+
+          // Zamiana BRANCH+warunek na ε
+          actions.remove(i);       // warunek
+          actions.remove(i);       // BRANCH
+          actions.add(i, "ε");     // ε
+          queue = new StringBuilder(String.join(":", actions));
+          continue;
+        }
+
+        // 🚶 Ruch dla zwykłych komend
+        if (current.equals("FORWARD")) {
+          if (dir == 0) y += 1;
+          else if (dir == 90) x += 1;
+          else if (dir == 180) y -= 1;
+          else if (dir == 270) x -= 1;
+        } else if (current.equals("TRIGHT")) {
+          dir = (dir + 90) % 360;
+        } else if (current.equals("TLEFT")) {
+          dir = (dir + 270) % 360;
+        }
+
+        // 🔧 Usuń z kolejki
+        int idx = queue.indexOf(current);
         if (idx == 0) {
-          queue.delete(0, action.length());
+          queue.delete(0, current.length());
           if (queue.length() > 0 && queue.charAt(0) == ':') queue.deleteCharAt(0);
         }
       }
 
-      // Final derivation step
-      System.out.printf("<ε, ((%d, %d), %d)>>%n", x, y, dir);
+      // 🏁 Koniec
+      System.out.printf("<ε, ε, ((%d, %d), %d)>>%n", x, y, dir);
       System.out.println("Final Machine State:");
       System.out.printf("((%d, %d), %d)%n", x, y, dir);
 
@@ -176,7 +222,8 @@ public final class Program_Exec
           World.beeperGrid,
           World.beeperInventory,
           World.gridWidth,
-          World.gridHeight
+          World.gridHeight,
+          World.walls
         )
       );
     

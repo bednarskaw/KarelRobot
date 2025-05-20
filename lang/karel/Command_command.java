@@ -83,6 +83,28 @@ public final class Command_command
           _2.apply();
         };
       }
+      case Command.IfElse(var b, var c1, var c2) ->
+      {
+        var _1 = Condition_condition.operation(b);
+        var _2 = Command_command.operation(c1);
+        var _3 = Command_command.operation(c2);
+        return (_Operation)() -> 
+        {
+          _1.apply();
+          _2.apply();
+          _3.apply();
+        };
+      }
+      case Command.While(var b, var c) ->
+      {
+        var _1 = Condition_condition.operation(b);
+        var _2 = Command_command.operation(c);
+        return (_Operation)() -> 
+        {
+          _1.apply();
+          _2.apply();
+        };
+      }
     }
   }
 }

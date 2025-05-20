@@ -6,17 +6,10 @@ public class KarelMain
     {
         try
         {
-            // parsing
             Program program = Karel_parser.parseProgram();
-            // pretty-printing
             System.out.println(program);
-            // executing: evaluating anonymous function S〚program〛()
-            // Parse the program
-            // Type-checking
             Program_Exec.operation(program).apply();
 
-            //Program_.operation(program).apply();
-            //Program_.operation(program).apply();	// operational
         }
         catch(Exception e)
         {

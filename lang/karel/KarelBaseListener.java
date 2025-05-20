@@ -39,6 +39,18 @@ public class KarelBaseListener implements KarelListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterDCondition(KarelParser.DConditionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDCondition(KarelParser.DConditionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterDCommand(KarelParser.DCommandContext ctx) { }
 	/**
 	 * {@inheritDoc}

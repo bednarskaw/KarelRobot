@@ -8,7 +8,7 @@ import static lang.karel.Karel.*;
 import lang.karel.KarelVisualizer;
     
 public sealed interface Command permits
-Command.Forward, Command.ForwardN, Command.TurnLeft, Command.TurnRight, Command.PutBeeper, Command.PickBeeper, Command.Reset, Command.Skip, Command.Seq
+Command.Forward, Command.ForwardN, Command.TurnLeft, Command.TurnRight, Command.PutBeeper, Command.PickBeeper, Command.Reset, Command.Skip, Command.Seq, Command.IfElse, Command.While
 {
   public record Forward() implements Command
   {
@@ -91,6 +91,29 @@ Command.Forward, Command.ForwardN, Command.TurnLeft, Command.TurnRight, Command.
       var c2 = _2;
       String _result;
        _result = c1 + ":" + c2; 
+      return _result;
+    }
+  }
+  public record IfElse(Condition _1, Command _2, Command _3) implements Command
+  {
+    public String toString()
+    {
+      var b = _1;
+      var c1 = _2;
+      var c2 = _3;
+      String _result;
+       _result = b + ":BRANCH(" + c1 + ", " + c2 + ")"; 
+      return _result;
+    }
+  }
+  public record While(Condition _1, Command _2) implements Command
+  {
+    public String toString()
+    {
+      var b = _1;
+      var c = _2;
+      String _result;
+       _result = "while " + b + " do " + c; 
       return _result;
     }
   }

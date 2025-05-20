@@ -6,6 +6,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.util.List;
+import java.util.Set;
 
 public class KarelVisualizer extends JPanel {
     private int x = 0, y = 0;
@@ -23,6 +24,7 @@ public class KarelVisualizer extends JPanel {
     private final List<int[]> movementHistory;
     private final List<boolean[][]> beeperHistory;
     private final List<Integer> beeperInventoryHistory;
+    private final Set<List<Integer>> wallSet;
     private int stepIndex = 0;
 
     private final int gridWidth;
@@ -30,12 +32,13 @@ public class KarelVisualizer extends JPanel {
 
     // Constructor with dynamic grid dimensions
     public KarelVisualizer(List<int[]> movementHistory, List<boolean[][]> beeperHistory,
-                           List<Integer> beeperInventoryHistory, int gridWidth, int gridHeight) {
+                           List<Integer> beeperInventoryHistory, int gridWidth, int gridHeight, Set<List<Integer>> wallSet) {
         this.movementHistory = movementHistory;
         this.beeperHistory = beeperHistory;
         this.beeperInventoryHistory = beeperInventoryHistory;
         this.gridWidth = gridWidth;
         this.gridHeight = gridHeight;
+        this.wallSet = wallSet;
 
         setPreferredSize(new Dimension(
                 gridWidth * CELL_SIZE + LEFT_PADDING + RIGHT_PADDING,
@@ -146,6 +149,35 @@ public class KarelVisualizer extends JPanel {
         // Beeper inventory label
         g.setColor(Color.YELLOW);
         g.drawString("Beeper Inventory: " + beeperInventoryHistory.get(stepIndex), 10, 20);
+
+        // 🔲 Draw walls
+        g.setColor(Color.RED);
+        for (List<Integer> wall : wallSet) {
+            int x1 = wall.get(0);
+            int y1 = wall.get(1);
+            int x2 = wall.get(2);
+            int y2 = wall.get(3);
+
+            // Oblicz współrzędne pikselowe środka komórek
+            int cx1 = LEFT_PADDING + x1 * CELL_SIZE;
+            int cy1 = TOP_PADDING + (gridHeight - 1 - y1) * CELL_SIZE;
+            int cx2 = LEFT_PADDING + x2 * CELL_SIZE;
+            int cy2 = TOP_PADDING + (gridHeight - 1 - y2) * CELL_SIZE;
+
+            // Ściana pionowa (np. między (0,0) a (1,0))
+            if (x1 != x2) {
+                int x = (cx1 + cx2) / 2;
+                g.drawLine(x, cy1 - CELL_SIZE / 2, x, cy1 + CELL_SIZE / 2);
+            }
+            // Ściana pozioma (np. między (0,0) a (0,1))
+            else if (y1 != y2) {
+                int y = (cy1 + cy2) / 2;
+                g.drawLine(cx1 - CELL_SIZE / 2, y, cx1 + CELL_SIZE / 2, y);
+            }
+        }
+
+
+
 
         // Draw robot
         BufferedImage robotImage = switch (direction) {
