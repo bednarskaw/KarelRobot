@@ -21,6 +21,7 @@ public class KarelVisualizer extends JPanel {
     private static final int BOTTOM_PADDING = 10;
 
     private BufferedImage northImage, southImage, eastImage, westImage, beeperImage;
+    private ImageIcon beeperIcon;
     private final List<int[]> movementHistory;
     private final List<boolean[][]> beeperHistory;
     private final List<Integer> beeperInventoryHistory;
@@ -45,6 +46,12 @@ public class KarelVisualizer extends JPanel {
                 gridHeight * CELL_SIZE + TOP_PADDING + BOTTOM_PADDING
         ));
         loadImages();
+        if (!movementHistory.isEmpty()) {
+            int[] state = movementHistory.get(0);
+            x = state[0];
+            y = state[1];
+            direction = state[2];
+        }
     }
 
     private void loadImages() {
@@ -53,7 +60,10 @@ public class KarelVisualizer extends JPanel {
             southImage = ImageIO.read(new File("photos/south.png"));
             eastImage = ImageIO.read(new File("photos/east.png"));
             westImage = ImageIO.read(new File("photos/west.png"));
-            beeperImage = ImageIO.read(new File("photos/beeper.png"));
+            //beeperImage = ImageIO.read(new File("photos/beeper.png"));
+            beeperIcon = new ImageIcon("photos/beep.gif");
+            Image scaled = beeperIcon.getImage().getScaledInstance(BEEPER_SIZE, BEEPER_SIZE, Image.SCALE_DEFAULT);
+            beeperIcon = new ImageIcon(scaled);
         } catch (Exception e) {
             System.err.println("Error loading images: " + e.getMessage());
         }
@@ -134,13 +144,13 @@ public class KarelVisualizer extends JPanel {
 
         // Draw beepers
         boolean[][] currentBeepers = beeperHistory.get(stepIndex);
-        if (beeperImage != null) {
+        if (beeperIcon != null) {
             for (int i = 0; i < gridWidth; i++) {
                 for (int j = 0; j < gridHeight; j++) {
                     if (currentBeepers[i][j]) {
                         int bx = LEFT_PADDING + i * CELL_SIZE - BEEPER_SIZE / 2;
                         int by = TOP_PADDING + (gridHeight - 1 - j) * CELL_SIZE - BEEPER_SIZE / 2;
-                        g.drawImage(beeperImage, bx, by, BEEPER_SIZE, BEEPER_SIZE, this);
+                        beeperIcon.paintIcon(this, g, bx, by);
                     }
                 }
             }
@@ -199,16 +209,55 @@ public class KarelVisualizer extends JPanel {
     public static void createAndShowGUI(KarelVisualizer visualizer) {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Karel Robot Visualization");
+            final Point[] mouseDownCompCoords = { null };
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setLayout(new BorderLayout());
+            frame.setUndecorated(true);
+            JPanel titleBar = new JPanel(new BorderLayout());
+            titleBar.setBackground(Color.BLACK);
+            titleBar.setPreferredSize(new Dimension(600, 30)); // wysokość paska tytułu
+            titleBar.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mousePressed(java.awt.event.MouseEvent e) {
+                    mouseDownCompCoords[0] = e.getPoint();
+                }
+
+                public void mouseReleased(java.awt.event.MouseEvent e) {
+                    mouseDownCompCoords[0] = null;
+                }
+            });
+
+            titleBar.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+                public void mouseDragged(java.awt.event.MouseEvent e) {
+                    Point currCoords = e.getLocationOnScreen();
+                    frame.setLocation(currCoords.x - mouseDownCompCoords[0].x, currCoords.y - mouseDownCompCoords[0].y);
+                }
+            });
+            JLabel titleLabel = new JLabel("  Karel Robot Visualization");
+            titleLabel.setForeground(Color.WHITE);
+
+            // 🔹 Przycisk zamykania
+            JButton closeButton = new JButton("❌");
+            closeButton.setFocusPainted(false);
+            closeButton.setBorderPainted(false);
+            closeButton.setBackground(Color.BLACK);
+            closeButton.setForeground(Color.WHITE);
+            closeButton.addActionListener(e -> System.exit(0));
+
+            titleBar.add(titleLabel, BorderLayout.WEST);
+            titleBar.add(closeButton, BorderLayout.EAST);
+
+            frame.add(titleBar, BorderLayout.NORTH);
+            frame.add(visualizer, BorderLayout.CENTER);
 
             frame.add(visualizer, BorderLayout.CENTER);
 
             JPanel buttonPanel = new JPanel();
-            JButton toStartButton = new JButton("⏮️");
-            JButton backwardButton = new JButton("⬅️");
-            JButton forwardButton = new JButton("➡️");
-            JButton toFinalButton = new JButton("⏭️");
+            buttonPanel.setBackground(Color.BLACK);
+            JButton toStartButton = createNavButton("⏮");
+            JButton backwardButton = createNavButton("⬅");
+            JButton forwardButton = createNavButton("➡");
+            JButton toFinalButton = createNavButton("⏭");
+
 
             toStartButton.addActionListener(e -> visualizer.moveToStart());
             backwardButton.addActionListener(e -> visualizer.moveBackward());
@@ -225,4 +274,16 @@ public class KarelVisualizer extends JPanel {
             frame.setVisible(true);
         });
     }
+    private static JButton createNavButton(String text) {
+        JButton button = new JButton(text);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(true);
+        button.setBackground(new Color(60, 60, 60));
+        button.setForeground(Color.WHITE);
+        button.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 16));
+        button.setPreferredSize(new Dimension(60, 40));
+        return button;
+    }
+
 }

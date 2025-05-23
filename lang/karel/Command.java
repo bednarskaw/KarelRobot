@@ -102,7 +102,7 @@ Command.Forward, Command.ForwardN, Command.TurnLeft, Command.TurnRight, Command.
       var c1 = _2;
       var c2 = _3;
       String _result;
-       _result = b + ":BRANCH(" + c1 + ", " + c2 + ")"; 
+       _result = b + ":IFELSE(" + c1 + ", " + c2 + ")"; 
       return _result;
     }
   }
@@ -113,7 +113,7 @@ Command.Forward, Command.ForwardN, Command.TurnLeft, Command.TurnRight, Command.
       var b = _1;
       var c = _2;
       String _result;
-       _result = "while " + b + " do " + c; 
+       _result = "WHILE(" + b + ", " + c + ")"; 
       return _result;
     }
   }

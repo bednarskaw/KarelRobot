@@ -34,9 +34,10 @@ dCommand returns [ Command _result ] :
 |  'putbeeper' { $_result = new Command.PutBeeper(); }
 |  'reset' { $_result = new Command.Reset(); }
 |  'skip' { $_result = new Command.Skip(); }
-|  c1=dCommand ';' c2=dCommand { $_result = new Command.Seq($c1._result, $c2._result); }
 |  'if' b=dCondition 'then' c1=dCommand 'else' c2=dCommand { $_result = new Command.IfElse($b._result, $c1._result, $c2._result); }
+|  'while' b=dCondition 'do' '(' c=dCommand ')' { $_result = new Command.While($b._result, $c._result); }
 |  'while' b=dCondition 'do' c=dCommand { $_result = new Command.While($b._result, $c._result); }
+|  c1=dCommand ';' c2=dCommand { $_result = new Command.Seq($c1._result, $c2._result); }
 ;
 dProgram returns [ Program _result ] :
    c=dCommand ( ';' c2=dCommand )* ';'? EOF { $_result = new Program.Prog($c._result); }
