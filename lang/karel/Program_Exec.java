@@ -140,6 +140,7 @@ public final class Program_Exec
       int x = World.movement.get(0)[0];
       int y = World.movement.get(0)[1];
       int dir = World.movement.get(0)[2];
+      boolean justPrintedForwardN = false;
 
       for (int i = 0; i < actions.size(); i++) {
         String current = actions.get(i);
@@ -178,8 +179,15 @@ public final class Program_Exec
           String body = inner.substring(commaIdx + 1).trim();
           String unfolded = String.format("IFELSE(%s:%s, SKIP)", body, current);
 
-          System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", current, x, y, dir);
-          System.out.printf("<%s:%s, ε, ((%d, %d), %d)>>%n", cond, unfolded, x, y, dir);
+          String fullState = String.join(":", actions.subList(i, actions.size()));
+          System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", fullState, x, y, dir);
+          /////
+          List<String> tail = new ArrayList<>(actions.subList(i + 1, actions.size()));
+          String rest = tail.isEmpty() ? "" : ":" + String.join(":", tail);
+
+
+          System.out.printf("<%s:%s%s, ε, ((%d, %d), %d)>>%n", cond, unfolded, rest, x, y, dir);
+          ///
 
           actions.set(i, cond);
           actions.add(i + 1, unfolded);
@@ -188,13 +196,13 @@ public final class Program_Exec
         }
 
         if (current.startsWith("FORWARD-")) {
+          if (!justPrintedForwardN) {
+            String currentState = String.join(":", actions.subList(i, actions.size()));
+            System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", currentState, x, y, dir);
+          }
+
           int step = Integer.parseInt(current.split("-")[1]);
 
-          // wypisz krok jako FORWARD-n
-          String currentState = String.join(":", actions.subList(i, actions.size()));
-          System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", currentState, x, y, dir);
-
-          // wykonanie nastąpi w kolejnych iteracjach
           actions.remove(i);
           actions.add(i, "FORWARD");
           if (step == 2) {
@@ -203,7 +211,8 @@ public final class Program_Exec
             actions.add(i + 1, "FORWARD-" + (step - 1));
           }
 
-          i--; // wracamy na początek rozwinięcia
+          justPrintedForwardN = false;  // resetujemy flagę po rozbiciu
+          i--;
           continue;
         }
 
@@ -241,7 +250,17 @@ public final class Program_Exec
           String part2 = content.substring(splitIndex + 1).trim();
           String chosen = result ? part1 : part2;
 
-          System.out.printf("<%s, %s, ((%d, %d), %d)>>%n", branch, cond, x, y, dir);
+          ////
+          List<String> tail = new ArrayList<>(actions.subList(i + 2, actions.size()));
+          String rest = tail.isEmpty() ? "" : ":" + String.join(":", tail);
+          System.out.printf("<%s%s, %s, ((%d, %d), %d)>>%n", branch, rest, cond, x, y, dir);
+          ////
+          String stepAfterDecision = chosen + rest;
+          if (chosen.startsWith("FORWARD-")) {
+            System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", stepAfterDecision, x, y, dir);
+            justPrintedForwardN = true;
+          }
+
 
           actions.remove(i); // cond
           actions.remove(i); // IFELSE
