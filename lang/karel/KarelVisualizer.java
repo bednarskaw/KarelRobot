@@ -7,6 +7,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.Set;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class KarelVisualizer extends JPanel {
     private int x = 0, y = 0;
@@ -26,20 +28,23 @@ public class KarelVisualizer extends JPanel {
     private final List<boolean[][]> beeperHistory;
     private final List<Integer> beeperInventoryHistory;
     private final Set<List<Integer>> wallSet;
+    private final List<String> semantics;
+    private final String bigStep;
     private int stepIndex = 0;
 
     private final int gridWidth;
     private final int gridHeight;
 
-    // Constructor with dynamic grid dimensions
     public KarelVisualizer(List<int[]> movementHistory, List<boolean[][]> beeperHistory,
-                           List<Integer> beeperInventoryHistory, int gridWidth, int gridHeight, Set<List<Integer>> wallSet) {
+                           List<Integer> beeperInventoryHistory, int gridWidth, int gridHeight, Set<List<Integer>> wallSet, List<String> semantics, String bigStep) {
         this.movementHistory = movementHistory;
         this.beeperHistory = beeperHistory;
         this.beeperInventoryHistory = beeperInventoryHistory;
         this.gridWidth = gridWidth;
         this.gridHeight = gridHeight;
         this.wallSet = wallSet;
+        this.semantics = semantics;
+        this.bigStep = bigStep;
 
         setPreferredSize(new Dimension(
                 gridWidth * CELL_SIZE + LEFT_PADDING + RIGHT_PADDING,
@@ -156,11 +161,9 @@ public class KarelVisualizer extends JPanel {
             }
         }
 
-        // Beeper inventory label
         g.setColor(Color.YELLOW);
         g.drawString("Beeper Inventory: " + beeperInventoryHistory.get(stepIndex), 10, 20);
 
-        // 🔲 Draw walls
         g.setColor(Color.RED);
         for (List<Integer> wall : wallSet) {
             int x1 = wall.get(0);
@@ -174,12 +177,10 @@ public class KarelVisualizer extends JPanel {
             int cx2 = LEFT_PADDING + x2 * CELL_SIZE;
             int cy2 = TOP_PADDING + (gridHeight - 1 - y2) * CELL_SIZE;
 
-            // Ściana pionowa (np. między (0,0) a (1,0))
             if (x1 != x2) {
                 int x = (cx1 + cx2) / 2;
                 g.drawLine(x, cy1 - CELL_SIZE / 2, x, cy1 + CELL_SIZE / 2);
             }
-            // Ściana pozioma (np. między (0,0) a (0,1))
             else if (y1 != y2) {
                 int y = (cy1 + cy2) / 2;
                 g.drawLine(cx1 - CELL_SIZE / 2, y, cx1 + CELL_SIZE / 2, y);
@@ -189,7 +190,6 @@ public class KarelVisualizer extends JPanel {
 
 
 
-        // Draw robot
         BufferedImage robotImage = switch (direction) {
             case 0 -> northImage;
             case 90 -> eastImage;
@@ -235,7 +235,6 @@ public class KarelVisualizer extends JPanel {
             JLabel titleLabel = new JLabel("  Karel Robot Visualization");
             titleLabel.setForeground(Color.WHITE);
 
-            // 🔹 Przycisk zamykania
             JButton closeButton = new JButton("❌");
             closeButton.setFocusPainted(false);
             closeButton.setBorderPainted(false);
@@ -251,8 +250,10 @@ public class KarelVisualizer extends JPanel {
 
             frame.add(visualizer, BorderLayout.CENTER);
 
-            JPanel buttonPanel = new JPanel();
+            JPanel buttonPanel = new JPanel(new BorderLayout());
             buttonPanel.setBackground(Color.BLACK);
+            JPanel navPanel = new JPanel();
+            navPanel.setBackground(Color.BLACK);
             JButton toStartButton = createNavButton("⏮");
             JButton backwardButton = createNavButton("⬅");
             JButton forwardButton = createNavButton("➡");
@@ -264,15 +265,62 @@ public class KarelVisualizer extends JPanel {
             forwardButton.addActionListener(e -> visualizer.moveForward());
             toFinalButton.addActionListener(e -> visualizer.moveToFinal());
 
-            buttonPanel.add(toStartButton);
-            buttonPanel.add(backwardButton);
-            buttonPanel.add(forwardButton);
-            buttonPanel.add(toFinalButton);
+            navPanel.add(toStartButton);
+            navPanel.add(backwardButton);
+            navPanel.add(forwardButton);
+            navPanel.add(toFinalButton);
+            buttonPanel.add(navPanel, BorderLayout.NORTH);
+
+            JPanel downloadPanel = new JPanel();
+            downloadPanel.setBackground(Color.BLACK);
+            JButton downloadButton = new JButton("Semantics");
+            downloadButton.setBackground(new Color(60, 60, 60));
+            downloadButton.setForeground(Color.WHITE);
+            downloadButton.addActionListener(e -> {
+                try {
+                    FileWriter small = new FileWriter("small-step-semantics.txt");
+                    for (String line : visualizer.getSemantics()) {
+                        small.write(line + "\n");
+                    }
+                    small.close();
+
+                    FileWriter big = new FileWriter("big-step-semantics.txt");
+                    big.write(visualizer.getBigStep());
+                    big.close();
+
+                    JOptionPane.showMessageDialog(null, "Semantics saved to files.");
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(null, "Error saving semantics: " + ex.getMessage());
+                }
+            });
+            downloadPanel.add(downloadButton);
+            buttonPanel.add(downloadPanel, BorderLayout.SOUTH);
 
             frame.add(buttonPanel, BorderLayout.SOUTH);
             frame.pack();
             frame.setVisible(true);
         });
+//        JButton downloadButton = new JButton("Download Semantics");
+//        downloadButton.setBackground(new Color(60, 60, 60));
+//        downloadButton.setForeground(Color.WHITE);
+//        downloadButton.addActionListener(e -> {
+//            try {
+//                FileWriter small = new FileWriter("small-step-semantics.txt");
+//                for (String line : visualizer.getSemantics()) {
+//                    small.write(line + "\n");
+//                }
+//                small.close();
+//
+//                FileWriter big = new FileWriter("big-step-semantics.txt");
+//                big.write(visualizer.getBigStep());
+//                big.close();
+//
+//                JOptionPane.showMessageDialog(null, "Semantics saved to files.");
+//            } catch (IOException ex) {
+//                JOptionPane.showMessageDialog(null, "Error saving semantics: " + ex.getMessage());
+//            }
+//        });
+//        buttonPanel.add(downloadButton);
     }
     private static JButton createNavButton(String text) {
         JButton button = new JButton(text);
@@ -285,5 +333,11 @@ public class KarelVisualizer extends JPanel {
         button.setPreferredSize(new Dimension(60, 40));
         return button;
     }
+    public List<String> getSemantics() {
+        return semantics;
+    }
 
+    public String getBigStep() {
+        return bigStep;
+    }
 }

@@ -13,7 +13,6 @@ public class KarelMain
         }
         catch(Exception e)
         {
-            // type-checking errors are caught here
             System.out.println(e.getMessage());
         }
     }

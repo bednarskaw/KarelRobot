@@ -112,6 +112,7 @@ public final class Program_Exec
 
       System.out.println("\nDerived from execution:");
 
+      List<String> traceLines = new ArrayList<>();
       List<String> actions = new ArrayList<>();
       String[] rawParts = parsed.split(":");
       for (int i = 0; i < rawParts.length; i++) {
@@ -179,15 +180,17 @@ public final class Program_Exec
           String body = inner.substring(commaIdx + 1).trim();
           String unfolded = String.format("IFELSE(%s:%s, SKIP)", body, current);
 
-          String fullState = String.join(":", actions.subList(i, actions.size()));
-          System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", fullState, x, y, dir);
-          /////
           List<String> tail = new ArrayList<>(actions.subList(i + 1, actions.size()));
           String rest = tail.isEmpty() ? "" : ":" + String.join(":", tail);
 
-
-          System.out.printf("<%s:%s%s, ε, ((%d, %d), %d)>>%n", cond, unfolded, rest, x, y, dir);
-          ///
+          String line = String.format("<%s%s, ε, ((%d, %d), %d)>>%n", current, rest, x, y, dir);
+          System.out.printf(line);
+          traceLines.add(line);
+          line = String.format("<%s:%s%s, ε, ((%d, %d), %d)>>%n", cond, unfolded, rest, x, y, dir);
+          System.out.printf(line);
+          traceLines.add(line);
+          //System.out.printf("<%s%s, ε, ((%d, %d), %d)>>%n", current, rest, x, y, dir);
+          //System.out.printf("<%s:%s%s, ε, ((%d, %d), %d)>>%n", cond, unfolded, rest, x, y, dir);
 
           actions.set(i, cond);
           actions.add(i + 1, unfolded);
@@ -198,11 +201,14 @@ public final class Program_Exec
         if (current.startsWith("FORWARD-")) {
           if (!justPrintedForwardN) {
             String currentState = String.join(":", actions.subList(i, actions.size()));
-            System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", currentState, x, y, dir);
+             String line = String.format("<%s, ε, ((%d, %d), %d)>>%n", currentState, x, y, dir);
+             System.out.printf(line);
+             traceLines.add(line);
+            //System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", currentState, x, y, dir);
+
           }
 
           int step = Integer.parseInt(current.split("-")[1]);
-
           actions.remove(i);
           actions.add(i, "FORWARD");
           if (step == 2) {
@@ -211,11 +217,10 @@ public final class Program_Exec
             actions.add(i + 1, "FORWARD-" + (step - 1));
           }
 
-          justPrintedForwardN = false;  // resetujemy flagę po rozbiciu
+          justPrintedForwardN = false;
           i--;
           continue;
         }
-
 
         if (i + 1 < actions.size() && actions.get(i + 1).startsWith("IFELSE(")) {
           String cond = current;
@@ -250,20 +255,24 @@ public final class Program_Exec
           String part2 = content.substring(splitIndex + 1).trim();
           String chosen = result ? part1 : part2;
 
-          ////
           List<String> tail = new ArrayList<>(actions.subList(i + 2, actions.size()));
           String rest = tail.isEmpty() ? "" : ":" + String.join(":", tail);
-          System.out.printf("<%s%s, %s, ((%d, %d), %d)>>%n", branch, rest, cond, x, y, dir);
-          ////
-          String stepAfterDecision = chosen + rest;
+
+           String line = String.format("<%s%s, %s, ((%d, %d), %d)>>%n", branch, rest, cond, x, y, dir);
+           System.out.printf(line);
+           traceLines.add(line);
+          //System.out.printf("<%s%s, %s, ((%d, %d), %d)>>%n", branch, rest, cond, x, y, dir);
+
           if (chosen.startsWith("FORWARD-")) {
-            System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", stepAfterDecision, x, y, dir);
+            line = String.format("<%s%s, ε, ((%d, %d), %d)>>%n", chosen, rest, x, y, dir);
+            System.out.printf(line);
+            traceLines.add(line);
+            //System.out.printf("<%s%s, ε, ((%d, %d), %d)>>%n", chosen, rest, x, y, dir);
             justPrintedForwardN = true;
           }
 
-
-          actions.remove(i); // cond
-          actions.remove(i); // IFELSE
+          actions.remove(i);
+          actions.remove(i);
 
           List<String> partsBack = new ArrayList<>();
           int depth = 0, start = 0;
@@ -287,16 +296,20 @@ public final class Program_Exec
 
         if (current.trim().isEmpty()) continue;
 
-        // Filtrowanie nadmiarowych rozwinięć
         if (!current.contains("WHILE(") && current.chars().filter(ch -> ch == ':').count() > 3) {
-          System.out.printf("<ε, ε, ((%d, %d), %d)>>%n", x, y, dir);
+          String line = String.format("<ε, ε, ((%d, %d), %d)>>%n", x, y, dir);
+          System.out.printf(line);
+          traceLines.add(line);
+          //System.out.printf("<ε, ε, ((%d, %d), %d)>>%n", x, y, dir);
           break;
         }
 
         String currentState = String.join(":", actions.subList(i, actions.size()));
-        System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", currentState, x, y, dir);
+        String line = String.format("<%s, ε, ((%d, %d), %d)>>%n", currentState, x, y, dir);
+        System.out.printf(line);
+        traceLines.add(line);
+        //System.out.printf("<%s, ε, ((%d, %d), %d)>>%n", currentState, x, y, dir);
 
-        // Wykonanie ruchu
         if (current.equals("FORWARD")) {
           if (dir == 0) y += 1;
           else if (dir == 90) x += 1;
@@ -308,20 +321,24 @@ public final class Program_Exec
           dir = (dir + 270) % 360;
         }
       }
-
-      System.out.printf("<ε, ε, ((%d, %d), %d)>>%n", x, y, dir);
-      System.out.println("Final Machine State:");
+      String line = String.format("<ε, ε, ((%d, %d), %d)>>%n", x, y, dir);
+      System.out.printf(line);
+      traceLines.add(line);
+      //System.out.printf("<ε, ε, ((%d, %d), %d)>>%n", x, y, dir);
+      System.out.printf("Final Machine State:");
       System.out.printf("((%d, %d), %d)%n", x, y, dir);
 
       lang.karel.KarelVisualizer.createAndShowGUI(
-        new lang.karel.KarelVisualizer(
-          World.movement,
-          World.beeperGrid,
-          World.beeperInventory,
-          World.gridWidth,
-          World.gridHeight,
-          World.walls
-        )
+         new lang.karel.KarelVisualizer(
+           World.movement,
+           World.beeperGrid,
+           World.beeperInventory,
+           World.gridWidth,
+           World.gridHeight,
+           World.walls,
+           traceLines,
+           String.format("Exec〚Prog[%s]〛 ⇒ ((%d, %d), %d)", parsed, x, y, dir)
+         )
       );
     
           return none;
